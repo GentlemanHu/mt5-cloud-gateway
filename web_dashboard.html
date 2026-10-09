@@ -370,12 +370,12 @@
         <div>
           <label style="display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600;">交易品种</label>
           <select id="klineSymbolSelect" style="background: #04060a; color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 7px 10px; font-size: 13px;">
-            <option value="XAUUSDm" selected>XAUUSDm (现货黄金)</option>
-            <option value="EURUSDm">EURUSDm (欧元/美元)</option>
-            <option value="BTCUSDm">BTCUSDm (比特币/美元)</option>
-            <option value="GBPUSDm">GBPUSDm (英镑/美元)</option>
-            <option value="USDJPYm">USDJPYm (美元/日元)</option>
-            <option value="ETHUSDm">ETHUSDm (以太坊/美元)</option>
+            <option value="XAUUSD" selected>XAUUSD (现货黄金)</option>
+            <option value="EURUSD">EURUSD (欧元/美元)</option>
+            <option value="BTCUSD">BTCUSD (比特币/美元)</option>
+            <option value="GBPUSD">GBPUSD (英镑/美元)</option>
+            <option value="USDJPY">USDJPY (美元/日元)</option>
+            <option value="ETHUSD">ETHUSD (以太坊/美元)</option>
           </select>
         </div>
 
@@ -1098,7 +1098,8 @@ MT5_GATEWAY_URL="${origin}" MT5_GATEWAY_TOKEN="${tVal}" python3 -c "import urlli
 
     function startSSE() {
       if (sseSource) sseSource.close();
-      sseSource = new EventSource('/stream?symbols=XAUUSDm,EURUSDm,BTCUSDm,GBPUSDm,USDJPYm,ETHUSDm');
+      const syms = 'XAUUSD,EURUSD,BTCUSD,GBPUSD,USDJPY,ETHUSD,XAUUSDm,EURUSDm,BTCUSDm,GBPUSDm,USDJPYm,ETHUSDm';
+      sseSource = new EventSource('/stream?symbols=' + syms);
       sseSource.addEventListener('tick', (e) => {
         try {
           const tick = JSON.parse(e.data);
@@ -1111,8 +1112,20 @@ MT5_GATEWAY_URL="${origin}" MT5_GATEWAY_TOKEN="${tVal}" python3 -c "import urlli
 
     function updateTickRow(tick) {
       const sym = tick.symbol;
-      const row = document.getElementById(`row-${sym}`);
+      let row = document.getElementById(`row-${sym}`);
+      if (!row) {
+        if (sym.endsWith('m')) {
+          row = document.getElementById(`row-${sym.slice(0, -1)}`);
+        } else {
+          row = document.getElementById(`row-${sym}m`);
+        }
+      }
       if (!row) return;
+
+      const symTag = row.querySelector('.sym-tag');
+      if (symTag && symTag.innerText !== sym) {
+        symTag.innerText = sym;
+      }
 
       const bidCell = row.querySelector('.bid');
       const askCell = row.querySelector('.ask');
@@ -1126,7 +1139,7 @@ MT5_GATEWAY_URL="${origin}" MT5_GATEWAY_TOKEN="${tVal}" python3 -c "import urlli
       bidCell.innerText = tick.bid.toFixed(sym.includes('XAU') || sym.includes('JPY') ? 2 : (sym.includes('BTC') ? 1 : 5));
       askCell.innerText = tick.ask.toFixed(sym.includes('XAU') || sym.includes('JPY') ? 2 : (sym.includes('BTC') ? 1 : 5));
       spreadCell.innerText = Math.round((tick.ask - tick.bid) * 100) / 100;
-      timeCell.innerText = tick.time.split(' ')[1];
+      timeCell.innerText = tick.time ? tick.time.split(' ')[1] : '';
 
       row.classList.remove('flash-green', 'flash-red');
       if (isUp) row.classList.add('flash-green');

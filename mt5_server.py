@@ -46,9 +46,18 @@ def resolve_symbol(symbol):
     if s in _symbol_cache: return s
     s_lower = s.lower()
     if s_lower in _symbol_lower_map: return _symbol_lower_map[s_lower]
-    if (s_lower + 'm') in _symbol_lower_map: return _symbol_lower_map[s_lower + 'm']
-    if s_lower.endswith('m') and s_lower[:-1] in _symbol_lower_map:
-        return _symbol_lower_map[s_lower[:-1]]
+
+    # Try common broker symbol variations and suffixes
+    for suffix in ['m', 'c', '.pro', '.raw', '.r', '.a', '_i']:
+        if (s_lower + suffix) in _symbol_lower_map:
+            return _symbol_lower_map[s_lower + suffix]
+
+    # Try stripping suffix if input had one
+    for suffix in ['m', 'c', '.pro', '.raw', '.r', '.a', '_i']:
+        if s_lower.endswith(suffix):
+            trimmed = s_lower[:-len(suffix)]
+            if trimmed in _symbol_lower_map:
+                return _symbol_lower_map[trimmed]
     return s
 
 def init_mt5(login=None, password=None, server=None):
@@ -150,21 +159,24 @@ hub = QuotationHub()
 mcp_dispatcher = McpDispatcher(resolve_symbol, hub)
 
 def background_tick_poller():
-    monitored = {'EURUSDm', 'XAUUSDm', 'GBPUSDm', 'USDJPYm', 'BTCUSDm', 'ETHUSDm'}
+    base_symbols = ['EURUSD', 'XAUUSD', 'GBPUSD', 'USDJPY', 'BTCUSD', 'ETHUSD']
     while True:
         try:
             if _connected:
-                for sym in list(monitored):
-                    t = mt5.symbol_info_tick(sym)
-                    if t and t.bid > 0:
-                        d = {
-                            'symbol': sym,
-                            'time': datetime.fromtimestamp(int(t.time)).strftime('%Y-%m-%d %H:%M:%S'),
-                            'timestamp': int(t.time), 'time_msc': int(t.time_msc),
-                            'bid': float(t.bid), 'ask': float(t.ask), 'last': float(t.last),
-                            'volume': float(t.volume), 'flags': int(t.flags)
-                        }
-                        hub.update_tick(sym, d)
+                for base in base_symbols:
+                    sym = resolve_symbol(base)
+                    if sym:
+                        mt5.symbol_select(sym, True)
+                        t = mt5.symbol_info_tick(sym)
+                        if t and t.bid > 0:
+                            d = {
+                                'symbol': sym,
+                                'time': datetime.fromtimestamp(int(t.time)).strftime('%Y-%m-%d %H:%M:%S'),
+                                'timestamp': int(t.time), 'time_msc': int(t.time_msc),
+                                'bid': float(t.bid), 'ask': float(t.ask), 'last': float(t.last),
+                                'volume': float(t.volume), 'flags': int(t.flags)
+                            }
+                            hub.update_tick(sym, d)
             time.sleep(0.08)
         except Exception:
             time.sleep(1.0)
@@ -177,7 +189,9 @@ class MT5Handler(http.server.BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, HEAD')
-            self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key')
+            self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key, MCP-Protocol-Version')
+            if getattr(self, 'path', '').startswith('/mcp'):
+                self.send_header('MCP-Protocol-Version', '2026-07-28')
             self.send_header('Content-Length', str(len(body)))
             self.end_headers()
             self.wfile.write(body)
@@ -334,7 +348,8 @@ class MT5Handler(http.server.BaseHTTPRequestHandler):
                 return self.send_json({
                     "service": "MT5 MCP Streamable HTTP Gateway",
                     "protocol": "MCP",
-                    "protocolVersion": "2024-11-05",
+                    "protocolVersion": "2026-07-28",
+                    "supportedVersions": ["2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"],
                     "status": "ready",
                     "tools_count": len(TOOLS_DEFINITIONS)
                 })
@@ -354,6 +369,7 @@ class MT5Handler(http.server.BaseHTTPRequestHandler):
                 self.send_header('Cache-Control', 'no-cache')
                 self.send_header('Connection', 'keep-alive')
                 self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('MCP-Protocol-Version', '2026-07-28')
                 self.end_headers()
                 active_token = token_manager.list_tokens()[0]['token'] if token_manager.list_tokens() else ''
                 ep_msg = f"event: endpoint\ndata: /mcp/messages?session_id={sid}&token={active_token}\n\n"

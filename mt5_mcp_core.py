@@ -8,9 +8,17 @@ import uuid
 import queue
 from mt5_kline_engine import fetch_rates_advanced, TIMEFRAME_MAP, TIMEFRAME_INFO
 
-MCP_PROTOCOL_VERSION = "2024-11-05"
+SUPPORTED_PROTOCOL_VERSIONS = [
+    "2026-07-28",  # Latest stateless core & per-request metadata spec
+    "2025-11-25",  # Enhanced authorization & batching spec
+    "2025-06-18",  # Roots & sampling enhancement spec
+    "2025-03-26",  # Structured tools schema update spec
+    "2024-11-05"   # Initial Foundation release (Claude Desktop standard)
+]
+LATEST_PROTOCOL_VERSION = "2026-07-28"
+DEFAULT_PROTOCOL_VERSION = "2024-11-05"
 SERVER_NAME = "mt5-trading-gateway"
-SERVER_VERSION = "1.0.0"
+SERVER_VERSION = "1.1.0"
 
 TOOLS_DEFINITIONS = [
     {
@@ -182,14 +190,27 @@ class McpDispatcher:
     def _dispatch_single(self, request_dict):
         method = request_dict.get("method")
         msg_id = request_dict.get("id")
-        params = request_dict.get("params", {})
+        params = request_dict.get("params", {}) or {}
+
+        # Handle notifications (requests without 'id' or methods under notifications/)
+        if msg_id is None and method and method.startswith("notifications/"):
+            return None
 
         if method == "initialize":
+            client_version = params.get("protocolVersion")
+            # Dynamic Version Negotiation
+            if client_version in SUPPORTED_PROTOCOL_VERSIONS:
+                negotiated_version = client_version
+            elif client_version:
+                negotiated_version = client_version  # Accept forward compatible versions
+            else:
+                negotiated_version = LATEST_PROTOCOL_VERSION
+
             return {
                 "jsonrpc": "2.0",
                 "id": msg_id,
                 "result": {
-                    "protocolVersion": MCP_PROTOCOL_VERSION,
+                    "protocolVersion": negotiated_version,
                     "capabilities": {
                         "tools": {"listChanged": False},
                         "resources": {"subscribe": False, "listChanged": False},
@@ -220,8 +241,28 @@ class McpDispatcher:
         elif method == "resources/list":
             return {"jsonrpc": "2.0", "id": msg_id, "result": {"resources": []}}
 
+        elif method == "resources/read":
+            return {
+                "jsonrpc": "2.0",
+                "id": msg_id,
+                "error": {
+                    "code": -32602,
+                    "message": "Resource not found"
+                }
+            }
+
         elif method == "prompts/list":
             return {"jsonrpc": "2.0", "id": msg_id, "result": {"prompts": []}}
+
+        elif method == "prompts/get":
+            return {
+                "jsonrpc": "2.0",
+                "id": msg_id,
+                "error": {
+                    "code": -32602,
+                    "message": "Prompt not found"
+                }
+            }
 
         elif method == "tools/call":
             tool_name = params.get("name")
