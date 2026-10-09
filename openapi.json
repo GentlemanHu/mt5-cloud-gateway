@@ -1,0 +1,506 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "MetaTrader 5 Cloud Gateway API & MCP Server",
+    "version": "1.0.0",
+    "description": "High-performance REST, Streaming (SSE/WebSocket), and Model Context Protocol (MCP) gateway for MetaTrader 5."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:18812",
+      "description": "Production Cloudflare Fixed Tunnel Endpoint"
+    },
+    {
+      "url": "http://10.211.55.3:18812",
+      "description": "Local Parallels Desktop VM Direct Endpoint"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    },
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "paths": {
+    "/status": {
+      "get": {
+        "summary": "获取服务与 MT5 终端在线状态",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "服务与终端状态响应",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "ok",
+                  "service": "MT5 HTTP & Stream Gateway",
+                  "auth_enabled": true,
+                  "mt5_connected": true,
+                  "last_error": null,
+                  "terminal_version": [500, 6230, "25 Sep 2026"],
+                  "account": {
+                    "login": 10000001,
+                    "server": "MetaQuotes-Demo",
+                    "balance": 33023.44,
+                    "equity": 33023.44,
+                    "connected": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account": {
+      "get": {
+        "summary": "获取交易账户资产、净值、杠杆与经纪商信息",
+        "responses": {
+          "200": {
+            "description": "账户资产详情",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "ok",
+                  "data": {
+                    "login": 10000001,
+                    "trade_mode": 0,
+                    "leverage": 1000,
+                    "balance": 33023.44,
+                    "equity": 33023.44,
+                    "margin": 0.0,
+                    "margin_free": 33023.44,
+                    "server": "MetaQuotes-Demo",
+                    "currency": "USD",
+                    "company": "MetaQuotes Ltd"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tick": {
+      "get": {
+        "summary": "获取指定交易品种最新实时 Tick 盘口价格",
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "XAUUSD"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "实时 Tick 数据",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "ok",
+                  "symbol": "XAUUSDm",
+                  "data": {
+                    "symbol": "XAUUSDm",
+                    "time": "2026-10-09 00:05:12",
+                    "timestamp": 1791475512,
+                    "bid": 4122.50,
+                    "ask": 4122.74,
+                    "last": 0.0,
+                    "volume": 0.0
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rates": {
+      "get": {
+        "summary": "获取指定周期、数量与时间范围的 K 线数据序列 (含实时动态未收盘柱)",
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "XAUUSD"
+          },
+          {
+            "name": "timeframe",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["M1", "M2", "M3", "M4", "M5", "M6", "M10", "M12", "M15", "M20", "M30", "H1", "H2", "H3", "H4", "H6", "H8", "H12", "D1", "W1", "MN1"]
+            },
+            "example": "M1"
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 500
+            },
+            "example": 500
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            },
+            "example": 0
+          },
+          {
+            "name": "start_time",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2026-10-01T00:00:00"
+          },
+          {
+            "name": "end_time",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2026-10-09T00:00:00"
+          },
+          {
+            "name": "include_forming",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "example": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "K 线序列响应 (包含分页元数据及形成中实时柱)",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "ok",
+                  "symbol": "XAUUSDm",
+                  "timeframe": "M1",
+                  "timeframe_seconds": 60,
+                  "query_mode": "position",
+                  "count": 2,
+                  "offset": 0,
+                  "has_more": true,
+                  "next_offset": 2,
+                  "forming_bar": {
+                    "time": "2026-10-09 19:47:00",
+                    "timestamp": 1791546420,
+                    "open": 4181.325,
+                    "high": 4183.747,
+                    "low": 4180.484,
+                    "close": 4183.211,
+                    "tick_volume": 173,
+                    "spread": 240,
+                    "is_closed": false,
+                    "change": 1.886,
+                    "change_pct": 0.0451,
+                    "amplitude": 3.263
+                  },
+                  "data": [
+                    {
+                      "time": "2026-10-09 19:46:00",
+                      "timestamp": 1791546360,
+                      "open": 4182.112,
+                      "high": 4182.485,
+                      "low": 4180.809,
+                      "close": 4181.113,
+                      "tick_volume": 126,
+                      "spread": 240,
+                      "is_closed": true,
+                      "change": -0.999,
+                      "change_pct": -0.0239,
+                      "amplitude": 1.676
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rates/stream": {
+      "get": {
+        "summary": "Server-Sent Events (SSE) 实时动态 K 线数据流推送",
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "example": "XAUUSD"
+          },
+          {
+            "name": "timeframe",
+            "in": "query",
+            "schema": { "type": "string", "default": "M1" },
+            "example": "M1"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "text/event-stream 长连接流，包含 kline_update, kline_closed, kline_open 事件"
+          }
+        }
+      }
+    },
+    "/mcp/client.py": {
+      "get": {
+        "summary": "下载自包含跨平台 Stdio MCP 桥接客户端脚本 (零本地环境路径硬编码)",
+        "responses": {
+          "200": {
+            "description": "Python 客户端脚本文件流 (text/x-python)"
+          }
+        }
+      }
+    },
+    "/symbols": {
+      "get": {
+        "summary": "查询全量交易品种名称列表",
+        "parameters": [
+          {
+            "name": "group",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Forex"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "品种列表响应",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "ok",
+                  "count": 356,
+                  "data": ["EURUSDm", "GBPUSDm", "XAUUSDm", "BTCUSDm"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/symbol_info": {
+      "get": {
+        "summary": "获取指定交易品种规格参数与盘口设置",
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "EURUSD"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "品种规格详情"
+          }
+        }
+      }
+    },
+    "/positions": {
+      "get": {
+        "summary": "获取当前未平仓交易持仓列表",
+        "responses": {
+          "200": {
+            "description": "持仓列表",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "ok",
+                  "count": 0,
+                  "data": []
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders": {
+      "get": {
+        "summary": "获取当前未成交挂单列表",
+        "responses": {
+          "200": {
+            "description": "挂单列表"
+          }
+        }
+      }
+    },
+    "/order": {
+      "post": {
+        "summary": "提交市价或挂单交易订单",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": {
+                "symbol": "XAUUSDm",
+                "action": "buy",
+                "volume": 0.01,
+                "price": 4122.50,
+                "sl": 4110.0,
+                "tp": 4140.0,
+                "comment": "AI Bot Buy"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "下单成功",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "ok",
+                  "order": 12849120,
+                  "deal": 12849120,
+                  "volume": 0.01,
+                  "price": 4122.50
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/close": {
+      "post": {
+        "summary": "根据持仓单号 (ticket) 平仓",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": {
+                "ticket": 12849120
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "平仓成功"
+          }
+        }
+      }
+    },
+    "/stream": {
+      "get": {
+        "summary": "Server-Sent Events (SSE) 实时毫秒级行情价格流推送长连接",
+        "parameters": [
+          {
+            "name": "symbols",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "XAUUSDm,EURUSDm,BTCUSDm"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SSE 流式连接建立",
+            "content": {
+              "text/event-stream": {}
+            }
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "summary": "Model Context Protocol (MCP) Streamable HTTP 协议入口",
+        "description": "基于 JSON-RPC 2.0，支持 tools/list, tools/call, resources/list, prompts/list 等标准协议",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "tools/call",
+                "params": {
+                  "name": "mt5_get_account",
+                  "arguments": {}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "MCP JSON-RPC 响应",
+            "content": {
+              "application/json": {
+                "example": {
+                  "jsonrpc": "2.0",
+                  "id": 1,
+                  "result": {
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "{\n  \"login\": 10000001,\n  \"balance\": 33023.44,\n  \"equity\": 33023.44\n}"
+                      }
+                    ],
+                    "isError": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Token",
+        "description": "在管理面板生成的专属 API 令牌 (mt5_live_...)"
+      },
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "通过 X-API-Key 头传递令牌"
+      }
+    }
+  }
+}

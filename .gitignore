@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+*.so
+*.dll
+*.log
+mt5_server.log
+
+# Environment & Credentials
+.env
+tokens.json
+
+# System & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.sublime-workspace
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+
+# Binaries & Downloads
+cloudflared.exe
+cloudflared
+token

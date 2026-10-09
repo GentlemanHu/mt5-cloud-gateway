@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MT5 云网关 API & MCP 详细接口文档 · MetaTrader 5 Cloud Gateway</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #080c14;
+      --bg-card: rgba(16, 23, 38, 0.9);
+      --bg-code: #03060a;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(0, 229, 255, 0.3);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-cyan: #00e5ff;
+      --accent-green: #00e676;
+      --accent-red: #ff3d71;
+      --accent-gold: #ffb703;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-main); color: var(--text-main);
+      font-family: var(--font-sans); min-height: 100vh; line-height: 1.5;
+    }
+    header {
+      background: rgba(11, 17, 29, 0.95); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle); position: sticky; top: 0; z-index: 100;
+      padding: 14px 28px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand-logo {
+      width: 36px; height: 36px; border-radius: 9px;
+      background: linear-gradient(135deg, #00e5ff, #0077b6);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 18px; color: #fff;
+    }
+    .brand-title { font-size: 17px; font-weight: 700; }
+    .brand-badge {
+      font-size: 11px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(0, 229, 255, 0.12); color: var(--accent-cyan);
+      border: 1px solid rgba(0, 229, 255, 0.25); font-family: var(--font-mono);
+    }
+    .header-links { display: flex; gap: 12px; align-items: center; }
+    .nav-link {
+      color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 600;
+      padding: 6px 12px; border-radius: 6px; border: 1px solid transparent; transition: all 0.2s;
+    }
+    .nav-link:hover { color: #fff; background: rgba(255,255,255,0.05); }
+    .nav-link.highlight {
+      color: var(--accent-cyan); border-color: rgba(0,229,255,0.3); background: rgba(0,229,255,0.06);
+    }
+    .layout { display: flex; max-width: 1540px; margin: 0 auto; }
+    aside {
+      width: 280px; position: sticky; top: 65px; height: calc(100vh - 65px);
+      overflow-y: auto; padding: 24px 16px; border-right: 1px solid var(--border-subtle);
+      display: flex; flex-direction: column; gap: 16px; flex-shrink: 0;
+    }
+    .sidebar-section-title {
+      font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.6px; margin-bottom: 6px; padding-left: 8px;
+    }
+    .sidebar-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 10px; border-radius: 6px; color: #cbd5e1; text-decoration: none;
+      font-size: 13px; transition: all 0.15s; font-family: var(--font-mono);
+    }
+    .sidebar-item:hover { background: rgba(255,255,255,0.06); color: var(--accent-cyan); }
+    .method-badge {
+      font-size: 10px; font-weight: 700; padding: 2px 5px; border-radius: 4px;
+    }
+    .badge-get { background: rgba(0, 230, 118, 0.15); color: var(--accent-green); }
+    .badge-post { background: rgba(0, 229, 255, 0.15); color: var(--accent-cyan); }
+    .badge-mcp { background: rgba(255, 183, 3, 0.15); color: var(--accent-gold); }
+    main { flex: 1; padding: 32px 48px; max-width: 1200px; }
+    .hero { margin-bottom: 36px; padding-bottom: 24px; border-bottom: 1px solid var(--border-subtle); }
+    .hero h1 { font-size: 28px; font-weight: 800; margin-bottom: 10px; }
+    .hero p { color: var(--text-muted); font-size: 14px; max-width: 800px; }
+    .ai-banner {
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.08), rgba(0, 119, 182, 0.08));
+      border: 1px solid var(--border-accent); border-radius: 12px; padding: 18px 24px;
+      margin-top: 18px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .doc-card {
+      background: var(--bg-card); border: 1px solid var(--border-subtle);
+      border-radius: 12px; margin-bottom: 28px; overflow: hidden;
+    }
+    .doc-card-header {
+      padding: 16px 20px; background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+    }
+    .endpoint-title { display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 14px; font-weight: 700; }
+    .doc-card-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+    .code-title {
+      font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;
+      margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;
+    }
+    pre {
+      background: var(--bg-code); border: 1px solid var(--border-subtle);
+      border-radius: 8px; padding: 14px; font-family: var(--font-mono);
+      font-size: 12px; color: #38bdf8; overflow-x: auto; position: relative;
+    }
+    .btn-copy {
+      background: rgba(255, 255, 255, 0.08); color: var(--text-main); border: 1px solid var(--border-subtle);
+      padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer;
+    }
+    .btn-copy:hover { background: rgba(255, 255, 255, 0.18); color: var(--accent-cyan); }
+    .param-table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: var(--font-mono); }
+    .param-table th { text-align: left; padding: 6px 8px; color: var(--text-muted); border-bottom: 1px solid var(--border-subtle); }
+    .param-table td { padding: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.03); }
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 2000; padding: 10px 18px; border-radius: 6px;
+      font-size: 12px; font-weight: 600; background: #111a2e; border: 1px solid var(--border-accent);
+      color: #fff; transform: translateY(100px); transition: transform 0.25s;
+    }
+    .toast.show { transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">M</div>
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="brand-title">MT5 API & MCP Documentation</span>
+          <span class="brand-badge">REST · SSE · MCP</span>
+        </div>
+      </div>
+    </div>
+    <div class="header-links">
+      <a href="/" class="nav-link">🖥️ 返回管理控制台</a>
+      <a href="/llms.txt" target="_blank" class="nav-link highlight">🤖 AI 友好格式 (/llms.txt)</a>
+      <a href="/openapi.json" target="_blank" class="nav-link">📋 OpenAPI 3.1 Spec</a>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- Sidebar Navigation -->
+    <aside>
+      <div>
+        <div class="sidebar-section-title">快速链接</div>
+        <a href="#intro" class="sidebar-item"><span>📖 简介与认证</span></a>
+        <a href="#mcp-overview" class="sidebar-item"><span>🔌 MCP 模型上下文协议</span></a>
+      </div>
+
+      <div>
+        <div class="sidebar-section-title">REST 基础接口</div>
+        <a href="#ep-status" class="sidebar-item"><span>/status</span><span class="method-badge badge-get">GET</span></a>
+        <a href="#ep-account" class="sidebar-item"><span>/account</span><span class="method-badge badge-get">GET</span></a>
+        <a href="#ep-tick" class="sidebar-item"><span>/tick</span><span class="method-badge badge-get">GET</span></a>
+        <a href="#ep-rates" class="sidebar-item"><span>/rates</span><span class="method-badge badge-get">GET</span></a>
+        <a href="#ep-symbols" class="sidebar-item"><span>/symbols</span><span class="method-badge badge-get">GET</span></a>
+        <a href="#ep-symbol_info" class="sidebar-item"><span>/symbol_info</span><span class="method-badge badge-get">GET</span></a>
+      </div>
+
+      <div>
+        <div class="sidebar-section-title">交易与订单</div>
+        <a href="#ep-positions" class="sidebar-item"><span>/positions</span><span class="method-badge badge-get">GET</span></a>
+        <a href="#ep-orders" class="sidebar-item"><span>/orders</span><span class="method-badge badge-get">GET</span></a>
+        <a href="#ep-order" class="sidebar-item"><span>/order</span><span class="method-badge badge-post">POST</span></a>
+        <a href="#ep-close" class="sidebar-item"><span>/close</span><span class="method-badge badge-post">POST</span></a>
+      </div>
+
+      <div>
+        <div class="sidebar-section-title">实时流订阅</div>
+        <a href="#ep-stream" class="sidebar-item"><span>/stream (Tick SSE)</span><span class="method-badge badge-get">SSE</span></a>
+        <a href="#ep-kline-stream" class="sidebar-item"><span>/rates/stream (K线 SSE)</span><span class="method-badge badge-get">SSE</span></a>
+        <a href="#ep-ws" class="sidebar-item"><span>WebSocket (18813)</span><span class="method-badge badge-get">WS</span></a>
+      </div>
+
+      <div>
+        <div class="sidebar-section-title">MCP 协议与客户端</div>
+        <a href="#mcp-overview" class="sidebar-item"><span>POST /mcp</span><span class="method-badge badge-mcp">MCP</span></a>
+        <a href="#mcp-overview" class="sidebar-item"><span>GET /mcp/sse</span><span class="method-badge badge-mcp">SSE</span></a>
+        <a href="#ep-client-download" class="sidebar-item"><span>/mcp/client.py</span><span class="method-badge badge-get">Stdio</span></a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main>
+      <section class="hero" id="intro">
+        <h1>MetaTrader 5 云网关开发者文档</h1>
+        <p>提供完整 REST API、双向行情流推送（Server-Sent Events 与 RFC 6455 WebSocket）、以及标准模型上下文协议 (Model Context Protocol, MCP) 支持。所有接口具备毫秒级响应速度与严格并发超时隔离保护。</p>
+
+        <div class="ai-banner">
+          <div>
+            <div style="font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 3px;">🤖 需要给其他 AI Agent / LLM 阅读？</div>
+            <div style="font-size: 12px; color: var(--text-muted);">本系统已生成专门针对大模型优化的纯文本文档规范，直接将 URL 发给 LLM 即可一键理解全量工具与参数。</div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-copy" onclick="copyText(window.location.origin + '/llms.txt')">复制 /llms.txt URL</button>
+            <button class="btn-copy" onclick="copyText(window.location.origin + '/openapi.json')">复制 OpenAPI URL</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Authentication -->
+      <div class="doc-card">
+        <div class="doc-card-header">
+          <div class="endpoint-title">🔐 接口鉴权规范 (Authentication)</div>
+        </div>
+        <div class="doc-card-body">
+          <p style="font-size: 13px; color: var(--text-muted);">
+            除公开文档页面 (`/docs`, `/llms.txt`, `/openapi.json`) 外，所有数据和交易接口均需认证。在管理面板生成专属 Bearer 令牌（格式 <code>mt5_live_...</code>），支持三类传入方式：
+          </p>
+          <pre><code># 方式 1: HTTP Header (推荐)
+Authorization: Bearer mt5_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# 方式 2: X-API-Key Header
+X-API-Key: mt5_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# 方式 3: URL Query 参数
+GET /status?token=mt5_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</code></pre>
+        </div>
+      </div>
+
+      <!-- Endpoint: /status -->
+      <div class="doc-card" id="ep-status">
+        <div class="doc-card-header">
+          <div class="endpoint-title"><span class="method-badge badge-get">GET</span> /status</div>
+          <button class="btn-copy" onclick="copyCode('code-status-curl')">复制 cURL</button>
+        </div>
+        <div class="doc-card-body">
+          <p style="font-size: 13px; color: var(--text-muted);">查询网关运行状态、MT5 终端版本 (Build 6230) 与基础账户连接。</p>
+          <div class="code-title"><span>请求示例 (cURL)</span></div>
+          <pre id="code-status-curl"><code>curl -s -H "Authorization: Bearer &lt;TOKEN&gt;" "http://localhost:18812/status"</code></pre>
+          <div class="code-title"><span>响应 JSON (200 OK)</span></div>
+          <pre><code>{
+  "status": "ok",
+  "service": "MT5 HTTP & Stream Gateway",
+  "auth_enabled": true,
+  "mt5_connected": true,
+  "last_error": null,
+  "terminal_version": [500, 6230, "25 Sep 2026"],
+  "account": {
+    "login": 10000001,
+    "server": "MetaQuotes-Demo",
+    "balance": 50000.00,
+    "equity": 50000.00,
+    "connected": true
+  }
+}</code></pre>
+        </div>
+      </div>
+
+      <!-- Endpoint: /account -->
+      <div class="doc-card" id="ep-account">
+        <div class="doc-card-header">
+          <div class="endpoint-title"><span class="method-badge badge-get">GET</span> /account</div>
+          <button class="btn-copy" onclick="copyCode('code-acc-curl')">复制 cURL</button>
+        </div>
+        <div class="doc-card-body">
+          <p style="font-size: 13px; color: var(--text-muted);">获取真实交易账户资产详情（余额、净值、杠杆、可用预付款）。</p>
+          <div class="code-title"><span>请求示例</span></div>
+          <pre id="code-acc-curl"><code>curl -s -H "Authorization: Bearer &lt;TOKEN&gt;" "http://localhost:18812/account"</code></pre>
+          <div class="code-title"><span>响应 JSON (200 OK)</span></div>
+          <pre><code>{
+  "status": "ok",
+  "data": {
+    "login": 10000001,
+    "balance": 50000.00,
+    "equity": 50000.00,
+    "margin": 0.0,
+    "margin_free": 50000.00,
+    "leverage": 100,
+    "server": "MetaQuotes-Demo",
+    "currency": "USD",
+    "company": "MetaQuotes Ltd"
+  }
+}</code></pre>
+        </div>
+      </div>
+
+      <!-- Endpoint: /tick -->
+      <div class="doc-card" id="ep-tick">
+        <div class="doc-card-header">
+          <div class="endpoint-title"><span class="method-badge badge-get">GET</span> /tick</div>
+          <button class="btn-copy" onclick="copyCode('code-tick-curl')">复制 cURL</button>
+        </div>
+        <div class="doc-card-body">
+          <p style="font-size: 13px; color: var(--text-muted);">获取指定品种的最新实时 Tick 盘口，支持智能自动匹配大小写和 m 后缀（如输入 xauusd 自动匹配交易商的 XAUUSDm）。</p>
+          <table class="param-table">
+            <tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            <tr><td>symbol</td><td>string</td><td>是</td><td>品种代码，如 XAUUSD, EURUSD, BTCUSD</td></tr>
+          </table>
+          <div class="code-title"><span>请求示例</span></div>
+          <pre id="code-tick-curl"><code>curl -s -H "Authorization: Bearer &lt;TOKEN&gt;" "http://localhost:18812/tick?symbol=XAUUSD"</code></pre>
+          <div class="code-title"><span>响应 JSON (200 OK)</span></div>
+          <pre><code>{
+  "status": "ok",
+  "symbol": "XAUUSDm",
+  "data": {
+    "symbol": "XAUUSDm",
+    "time": "2026-10-09 00:05:12",
+    "timestamp": 1791475512,
+    "bid": 4122.50,
+    "ask": 4122.74,
+    "last": 0.0,
+    "volume": 0.0
+  }
+}</code></pre>
+        </div>
+      </div>
+
+      <!-- Endpoint: /rates & /kline -->
+      <div class="doc-card" id="ep-rates">
+        <div class="doc-card-header">
+          <div class="endpoint-title"><span class="method-badge badge-get">GET</span> /rates & /kline</div>
+          <button class="btn-copy" onclick="copyCode('code-rates-curl')">复制 cURL</button>
+        </div>
+        <div class="doc-card-body">
+          <p style="font-size: 13px; color: var(--text-muted);">
+            高精度多维 K 线(OHLCV)检索引擎：支持全量周期 (M1 至 MN1 及别名)、任意长度检索 (支持 10,000+ 柱)、时间范围检索、偏移分页，并实时标记当前正在波动的未收盘柱 (<code>is_closed: false</code>)。
+          </p>
+          <table class="param-table">
+            <tr><th>参数名</th><th>类型</th><th>默认值</th><th>说明</th></tr>
+            <tr><td><code>symbol</code></td><td>string</td><td>XAUUSD</td><td>品种代码，支持模糊后缀解析（如 XAUUSD -> XAUUSDm）</td></tr>
+            <tr><td><code>timeframe</code></td><td>string</td><td>M1</td><td>周期：M1, M2, M3, M4, M5, M6, M10, M12, M15, M20, M30, H1, H2, H3, H4, H6, H8, H12, D1, W1, MN1（亦支持 1m, 5m, 1h, 1d 等）</td></tr>
+            <tr><td><code>count</code> / <code>limit</code></td><td>int</td><td>500</td><td>获取 K 线数量（支持 10 至 50,000+ 柱的大批量请求）</td></tr>
+            <tr><td><code>start</code> / <code>offset</code></td><td>int</td><td>0</td><td>起始柱偏移位置（0 为最新柱，向前历史回溯）</td></tr>
+            <tr><td><code>start_time</code> / <code>from</code></td><td>string</td><td>-</td><td>起始时间（支持 ISO 8601 如 <code>2026-10-01T00:00:00</code> 或 UNIX 时间戳）</td></tr>
+            <tr><td><code>end_time</code> / <code>to</code></td><td>string</td><td>-</td><td>结束时间（与 start_time 配合进行确定时间段切片）</td></tr>
+            <tr><td><code>include_forming</code></td><td>bool</td><td>true</td><td>是否包含当前正在波动的未收盘实时柱 (<code>is_closed: false</code>)</td></tr>
+          </table>
+
+          <div class="code-title"><span>请求示例 1: 基础周期查询 (含当前实时形成中柱)</span></div>
+          <pre id="code-rates-curl"><code>curl -s -H "Authorization: Bearer &lt;TOKEN&gt;" "http://localhost:18812/rates?symbol=XAUUSD&timeframe=M1&count=2"</code></pre>
+
+          <div class="code-title"><span>请求示例 2: 大批量分页查询 (拉取 5,000 根 H1 K 线)</span></div>
+          <pre><code>curl -s -H "Authorization: Bearer &lt;TOKEN&gt;" "http://localhost:18812/rates?symbol=XAUUSD&timeframe=H1&count=5000&start=0"</code></pre>
+
+          <div class="code-title"><span>请求示例 3: 确定时间范围历史切片</span></div>
+          <pre><code>curl -s -H "Authorization: Bearer &lt;TOKEN&gt;" "http://localhost:18812/rates?symbol=XAUUSD&timeframe=D1&start_time=2026-01-01&end_time=2026-10-09"</code></pre>
+
+          <div class="code-title"><span>响应 JSON 格式规范 (200 OK)</span></div>
+          <pre><code>{
+  "status": "ok",
+  "symbol": "XAUUSDm",
+  "timeframe": "M1",
+  "timeframe_seconds": 60,
+  "query_mode": "position",
+  "count": 2,
+  "offset": 0,
+  "has_more": true,
+  "next_offset": 2,
+  "time_start": "2026-10-09 19:46:00",
+  "time_end": "2026-10-09 19:47:00",
+  "forming_bar": {
+    "time": "2026-10-09 19:47:00",
+    "timestamp": 1791546420,
+    "open": 4181.325,
+    "high": 4183.747,
+    "low": 4180.484,
+    "close": 4183.211,
+    "tick_volume": 173,
+    "spread": 240,
+    "real_volume": 0,
+    "is_closed": false,
+    "change": 1.886,
+    "change_pct": 0.0451,
+    "amplitude": 3.263
+  },
+  "data": [
+    {
+      "time": "2026-10-09 19:46:00",
+      "timestamp": 1791546360,
+      "open": 4182.112,
+      "high": 4182.485,
+      "low": 4180.809,
+      "close": 4181.113,
+      "tick_volume": 126,
+      "spread": 240,
+      "real_volume": 0,
+      "is_closed": true,
+      "change": -0.999,
+      "change_pct": -0.0239,
+      "amplitude": 1.676
+    },
+    {
+      "time": "2026-10-09 19:47:00",
+      "timestamp": 1791546420,
+      "open": 4181.325,
+      "high": 4183.747,
+      "low": 4180.484,
+      "close": 4183.211,
+      "tick_volume": 173,
+      "spread": 240,
+      "real_volume": 0,
+      "is_closed": false,
+      "change": 1.886,
+      "change_pct": 0.0451,
+      "amplitude": 3.263
+    }
+  ]
+}</code></pre>
+        </div>
+      </div>
+
+      <!-- Endpoint: /rates/stream (K-Line SSE Stream) -->
+      <div class="doc-card" id="ep-kline-stream">
+        <div class="doc-card-header">
+          <div class="endpoint-title"><span class="method-badge badge-get">SSE</span> /rates/stream (动态 K 线推流)</div>
+          <button class="btn-copy" onclick="copyCode('code-kline-stream-curl')">复制 cURL</button>
+        </div>
+        <div class="doc-card-body">
+          <p style="font-size: 13px; color: var(--text-muted);">
+            基于 Server-Sent Events (SSE) 的长连接动态 K 线推送协议。自动维护当前周期的 forming candle，毫秒级推送柱内价格跳动、柱收盘 (<code>kline_closed</code>) 与新柱开盘 (<code>kline_open</code>)。
+          </p>
+          <table class="param-table">
+            <tr><th>参数名</th><th>类型</th><th>默认值</th><th>说明</th></tr>
+            <tr><td><code>symbol</code></td><td>string</td><td>XAUUSD</td><td>需要订阅的交易品种代码</td></tr>
+            <tr><td><code>timeframe</code></td><td>string</td><td>M1</td><td>K 线周期 (M1-MN1)</td></tr>
+            <tr><td><code>token</code></td><td>string</td><td>-</td><td>认证 Bearer Token（可通过 URL 查询参数传递）</td></tr>
+          </table>
+
+          <div class="code-title"><span>订阅命令示例</span></div>
+          <pre id="code-kline-stream-curl"><code>curl -N "http://localhost:18812/rates/stream?symbol=XAUUSD&timeframe=M1&token=&lt;TOKEN&gt;"</code></pre>
+
+          <div class="code-title"><span>事件类型与数据格式</span></div>
+          <pre><code>// 1. 连接就绪
+event: ready
+data: {"status": "connected", "symbol": "XAUUSDm", "timeframe": "M1", "timeframe_seconds": 60, "initial_rates": [...]}
+
+// 2. 实时跳动更新 (形成中 K 线 OHLCV 刷新)
+event: kline_update
+data: {"time": "2026-10-09 19:47:00", "timestamp": 1791546420, "open": 4181.325, "high": 4183.747, "low": 4180.484, "close": 4183.50, "tick_volume": 174, "is_closed": false, ...}
+
+// 3. 周期时间走完，确认收盘
+event: kline_closed
+data: {"time": "2026-10-09 19:47:00", "timestamp": 1791546420, "open": 4181.325, "high": 4183.747, "low": 4180.484, "close": 4183.211, "is_closed": true, ...}
+
+// 4. 新周期开启，新 K 线初始化
+event: kline_open
+data: {"time": "2026-10-09 19:48:00", "timestamp": 1791546480, "open": 4183.211, "high": 4183.211, "low": 4183.211, "close": 4183.211, "is_closed": false, ...}</code></pre>
+        </div>
+      </div>
+
+      <!-- Endpoint: /order -->
+      <div class="doc-card" id="ep-order">
+        <div class="doc-card-header">
+          <div class="endpoint-title"><span class="method-badge badge-post">POST</span> /order</div>
+          <button class="btn-copy" onclick="copyCode('code-order-curl')">复制 cURL</button>
+        </div>
+        <div class="doc-card-body">
+          <p style="font-size: 13px; color: var(--text-muted);">向 MetaTrader 5 发送市价交易订单。</p>
+          <div class="code-title"><span>请求体 JSON (Request Body)</span></div>
+          <pre><code>{
+  "symbol": "XAUUSDm",
+  "action": "buy",
+  "volume": 0.01,
+  "price": 4122.50,
+  "sl": 4110.0,
+  "tp": 4140.0,
+  "comment": "AI Bot Order"
+}</code></pre>
+          <div class="code-title"><span>请求示例</span></div>
+          <pre id="code-order-curl"><code>curl -s -X POST "http://localhost:18812/order" \
+  -H "Authorization: Bearer &lt;TOKEN&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{"symbol":"XAUUSDm","action":"buy","volume":0.01,"sl":4110.0,"tp":4140.0}'</code></pre>
+          <div class="code-title"><span>响应 JSON (200 OK)</span></div>
+          <pre><code>{
+  "status": "ok",
+  "order": 12849120,
+  "deal": 12849120,
+  "price": 4122.74,
+  "volume": 0.01
+}</code></pre>
+        </div>
+      </div>
+
+      <!-- Endpoint: /close -->
+      <div class="doc-card" id="ep-close">
+        <div class="doc-card-header">
+          <div class="endpoint-title"><span class="method-badge badge-post">POST</span> /close</div>
+        </div>
+        <div class="doc-card-body">
+          <p style="font-size: 13px; color: var(--text-muted);">根据持仓单号 (ticket) 进行平仓。</p>
+          <div class="code-title"><span>请求体 JSON</span></div>
+          <pre><code>{
+  "ticket": 12849120
+}</code></pre>
+          <div class="code-title"><span>响应 JSON (200 OK)</span></div>
+          <pre><code>{
+  "status": "ok",
+  "deal": 12849121
+}</code></pre>
+        </div>
+      </div>
+
+      <!-- Section: Real-time Streaming -->
+      <div class="doc-card" id="ep-stream">
+        <div class="doc-card-header">
+          <div class="endpoint-title"><span class="method-badge badge-get">GET</span> /stream (SSE 实时推流)</div>
+        </div>
+        <div class="doc-card-body">
+          <p style="font-size: 13px; color: var(--text-muted);">Server-Sent Events 实时行情价格流，盘口发生微秒级跳动即刻推送。</p>
+          <pre><code># 客户端订阅示例
+curl -N "http://localhost:18812/stream?symbols=XAUUSD,EURUSD,BTCUSD&token=&lt;TOKEN&gt;"
+
+# 服务端推送流格式
+event: tick
+data: {"symbol": "XAUUSDm", "time": "2026-10-09 00:05:12", "bid": 4122.50, "ask": 4122.74}
+
+: ping</code></pre>
+        </div>
+      </div>
+
+      <!-- Section: MCP Server -->
+      <div class="doc-card" id="mcp-overview">
+        <div class="doc-card-header">
+          <div class="endpoint-title"><span class="method-badge badge-mcp">MCP</span> 模型上下文协议 (Model Context Protocol)</div>
+        </div>
+        <div class="doc-card-body">
+          <p style="font-size: 13px; color: var(--text-muted);">
+            网关原生实现了 Anthropic/Model Context Protocol (MCP) 标准，支持 <strong>Streamable HTTP</strong>、<strong>SSE</strong> 与 <strong>Stdio</strong> 三种传输方式，暴露出 13 项交易与系统运维工具：
+          </p>
+          <table class="param-table">
+            <tr><th>工具名称</th><th>功能描述</th><th>核心输入参数</th></tr>
+            <tr><td>mt5_get_status</td><td>获取终端连接状态与版本</td><td>无</td></tr>
+            <tr><td>mt5_get_account</td><td>获取账户资产余额与净值</td><td>无</td></tr>
+            <tr><td>mt5_get_tick</td><td>获取最新实时盘口价格</td><td><code>symbol</code></td></tr>
+            <tr><td>mt5_get_rates</td><td>拉取全周期历史与动态K线序列(含形成中柱)</td><td><code>symbol</code>, <code>timeframe</code>, <code>count</code>, <code>start</code>, <code>start_time</code>, <code>end_time</code>, <code>include_forming</code></td></tr>
+            <tr><td>mt5_list_symbols</td><td>查询支持的品种列表</td><td><code>group</code> (可选)</td></tr>
+            <tr><td>mt5_get_symbol_info</td><td>查询品种规格与参数</td><td><code>symbol</code></td></tr>
+            <tr><td>mt5_get_positions</td><td>获取未平仓持仓列表</td><td>无</td></tr>
+            <tr><td>mt5_get_orders</td><td>获取挂单列表</td><td>无</td></tr>
+            <tr><td>mt5_order_send</td><td>提交交易订单 (买/卖)</td><td><code>symbol</code>, <code>action</code>, <code>volume</code></td></tr>
+            <tr><td>mt5_position_close</td><td>平仓持仓单</td><td><code>ticket</code></td></tr>
+            <tr><td>mt5_restart_terminal</td><td>安全重启 MT5 终端</td><td>无</td></tr>
+            <tr><td>mt5_restart_gateway</td><td>重启网关服务</td><td>无</td></tr>
+            <tr><td>mt5_get_logs</td><td>获取最新运行日志</td><td><code>lines</code></td></tr>
+          </table>
+
+          <div class="code-title" style="margin-top: 14px;"><span>MCP Streamable HTTP 调用示例 (tools/call: mt5_get_rates 任意周期大批量检索)</span></div>
+          <pre><code>curl -s -X POST "http://localhost:18812/mcp" \
+  -H "Authorization: Bearer &lt;TOKEN&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "mt5_get_rates",
+      "arguments": {
+        "symbol": "XAUUSDm",
+        "timeframe": "M15",
+        "count": 1000,
+        "include_forming": true
+      }
+    }
+  }'</code></pre>
+        </div>
+      </div>
+
+      <!-- Section: Portable Stdio MCP Bridge -->
+      <div class="doc-card" id="ep-client-download">
+        <div class="doc-card-header">
+          <div class="endpoint-title"><span class="method-badge badge-get">GET</span> /mcp/client.py (便携式 Stdio 桥接客户端)</div>
+          <button class="btn-copy" onclick="copyCode('code-client-download')">复制命令</button>
+        </div>
+        <div class="doc-card-body">
+          <p style="font-size: 13px; color: var(--text-muted);">
+            专为 Cursor、Windsurf、Claude Code、Tabby 及终端环境提供的跨平台便携 Stdio-to-HTTP 桥接脚本。零第三方依赖（仅使用标准库 urllib），<strong>零机器本地路径硬编码与泄漏</strong>，面向外部任意环境通用。
+          </p>
+
+          <div class="code-title"><span>方式 1: 直接下载便携客户端并在本地执行</span></div>
+          <pre id="code-client-download"><code># 1. 从网关下载标准客户端
+curl -fsSL http://localhost:18812/mcp/client.py -o mt5_client.py
+
+# 2. 传入 Token 启动 Stdio 桥接器
+python3 mt5_client.py --token "&lt;YOUR_TOKEN&gt;"</code></pre>
+
+          <div class="code-title"><span>方式 2: Claude Desktop 原生直连配置 (推荐，零本地 Python 依赖)</span></div>
+          <pre><code>// ~/Library/Application Support/Claude/claude_desktop_config.json
+{
+  "mcpServers": {
+    "mt5-gateway": {
+      "url": "http://localhost:18812/mcp/sse?token=&lt;YOUR_TOKEN&gt;"
+    }
+  }
+}</code></pre>
+
+          <div class="code-title"><span>方式 3: 零文件单行免下载管道启动</span></div>
+          <pre><code>MT5_GATEWAY_TOKEN="&lt;YOUR_TOKEN&gt;" python3 -c "import urllib.request; exec(urllib.request.urlopen('http://localhost:18812/mcp/client.py').read().decode('utf-8'))"</code></pre>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <div id="toast" class="toast">已复制</div>
+
+  <script>
+    function copyText(str) {
+      navigator.clipboard.writeText(str).then(() => {
+        const t = document.getElementById('toast');
+        t.innerText = '已复制: ' + str;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2000);
+      });
+    }
+    function copyCode(elemId) {
+      const code = document.getElementById(elemId).innerText;
+      copyText(code);
+    }
+  </script>
+</body>
+</html>

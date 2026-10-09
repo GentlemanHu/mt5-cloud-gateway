@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MT5 云网关管理控制台 · MetaTrader 5 Cloud Gateway</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #080c14;
+      --bg-card: rgba(16, 23, 38, 0.88);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(0, 229, 255, 0.3);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-cyan: #00e5ff;
+      --accent-green: #00e676;
+      --accent-red: #ff3d71;
+      --accent-gold: #ffb703;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-main); color: var(--text-main);
+      font-family: var(--font-sans); min-height: 100vh; overflow-x: hidden;
+      background-image:
+        radial-gradient(circle at 15% 15%, rgba(0, 229, 255, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(0, 230, 118, 0.03) 0%, transparent 40%);
+    }
+    header {
+      background: rgba(11, 17, 29, 0.92); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle); position: sticky; top: 0; z-index: 100;
+      padding: 14px 28px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand-logo {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: linear-gradient(135deg, #00e5ff, #0077b6);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 20px; color: #fff;
+      box-shadow: 0 0 16px rgba(0, 229, 255, 0.4);
+    }
+    .brand-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+    .brand-badge {
+      font-size: 11px; padding: 2px 8px; border-radius: 20px;
+      background: rgba(0, 229, 255, 0.12); color: var(--accent-cyan);
+      border: 1px solid rgba(0, 229, 255, 0.25); font-family: var(--font-mono);
+    }
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+    .pill {
+      display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+      border-radius: 8px; background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle); font-size: 12px; font-family: var(--font-mono);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot.green { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+    .dot.red { background: var(--accent-red); box-shadow: 0 0 8px var(--accent-red); }
+    button { cursor: pointer; border: none; font-family: var(--font-sans); font-weight: 600; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+    .btn-sm {
+      padding: 6px 14px; border-radius: 6px; font-size: 12px;
+      background: rgba(255, 255, 255, 0.08); color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+    }
+    .btn-sm:hover { background: rgba(255, 255, 255, 0.16); }
+    .btn-primary {
+      background: linear-gradient(135deg, #00e5ff, #0088cc); color: #080c14;
+      padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0, 229, 255, 0.3);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 229, 255, 0.45); }
+    .btn-danger {
+      background: rgba(255, 61, 113, 0.15); color: var(--accent-red);
+      border: 1px solid rgba(255, 61, 113, 0.3); padding: 5px 10px; border-radius: 6px; font-size: 11px;
+    }
+    .btn-danger:hover { background: rgba(255, 61, 113, 0.3); }
+    .container { max-width: 1440px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+    .card {
+      background: var(--bg-card); backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle); border-radius: 14px; padding: 20px;
+      position: relative; overflow: hidden;
+    }
+    .stat-label { font-size: 12px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; }
+    .stat-value { font-size: 26px; font-weight: 700; margin-top: 8px; font-family: var(--font-mono); }
+    .stat-meta { font-size: 12px; color: var(--text-muted); margin-top: 6px; display: flex; gap: 8px; align-items: center; }
+    .val-green { color: var(--accent-green); }
+    .val-cyan { color: var(--accent-cyan); }
+    .val-gold { color: var(--accent-gold); }
+    .main-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; }
+    @media (max-width: 1080px) { .main-grid { grid-template-columns: 1fr; } }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .card-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .ticker-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); }
+    .ticker-table th { text-align: left; padding: 10px 12px; font-size: 11px; color: var(--text-muted); border-bottom: 1px solid var(--border-subtle); text-transform: uppercase; }
+    .ticker-table td { padding: 12px; font-size: 13px; border-bottom: 1px solid rgba(255, 255, 255, 0.03); }
+    .ticker-row.flash-green td { background: rgba(0, 230, 118, 0.12); }
+    .ticker-row.flash-red td { background: rgba(255, 61, 113, 0.12); }
+    .sym-tag { font-weight: 700; color: #fff; background: rgba(255, 255, 255, 0.06); padding: 3px 8px; border-radius: 5px; font-size: 12px; }
+    .control-group { display: flex; flex-direction: column; gap: 10px; }
+    .action-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-subtle); border-radius: 10px;
+    }
+    .action-info h4 { font-size: 13px; font-weight: 600; }
+    .action-info p { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .api-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .api-tag {
+      padding: 6px 12px; border-radius: 6px; font-size: 11px;
+      background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-subtle);
+      color: var(--accent-cyan); font-family: var(--font-mono); cursor: pointer;
+    }
+    .api-tag:hover { background: rgba(0, 229, 255, 0.15); border-color: var(--accent-cyan); }
+    .terminal-box {
+      background: #04060a; border: 1px solid var(--border-subtle); border-radius: 10px;
+      padding: 12px; font-family: var(--font-mono); font-size: 12px; color: #94a3b8;
+      max-height: 240px; overflow-y: auto; line-height: 1.5;
+    }
+    /* Token Table */
+    .token-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); margin-top: 12px; }
+    .token-table th { text-align: left; padding: 8px 10px; font-size: 11px; color: var(--text-muted); border-bottom: 1px solid var(--border-subtle); }
+    .token-table td { padding: 10px; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+    .badge-active { color: var(--accent-green); background: rgba(0,230,118,0.1); padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+    .badge-revoked { color: var(--accent-red); background: rgba(255,61,113,0.1); padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+    /* MCP Tabs */
+    .mcp-nav { display: flex; gap: 8px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .mcp-tab-btn {
+      background: rgba(255, 255, 255, 0.04); color: var(--text-muted);
+      border: 1px solid var(--border-subtle); padding: 6px 14px; border-radius: 6px;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    .mcp-tab-btn.active {
+      background: rgba(0, 229, 255, 0.15); color: var(--accent-cyan); border-color: var(--accent-cyan);
+    }
+    .mcp-code-block {
+      background: #04060a; border: 1px solid var(--border-subtle); border-radius: 10px;
+      padding: 14px; font-family: var(--font-mono); font-size: 12px; color: #38bdf8;
+      overflow-x: auto; white-space: pre-wrap; word-break: break-all; margin-bottom: 12px;
+    }
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 2000;
+      padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      background: #111a2e; border: 1px solid var(--border-accent); color: #fff;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6); transform: translateY(100px);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .toast.show { transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">M</div>
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="brand-title">MT5 Cloud Gateway</span>
+          <span class="brand-badge">PRO v6230</span>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">Windows 11 Native Architecture</div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <div class="pill">
+        <span class="dot green"></span>
+        <span id="topHostname">localhost:18812</span>
+      </div>
+      <div class="pill">
+        <span class="dot green" id="ipcDot"></span>
+        <span id="ipcStatus">MT5 连接中</span>
+      </div>
+      <div class="pill">
+        <span class="dot green" id="activeConnDot"></span>
+        <span id="activeConnText">活跃连接: 0</span>
+      </div>
+      <a href="/docs" target="_blank" style="text-decoration:none;"><button class="btn-sm" style="color:var(--accent-cyan); border-color:rgba(0,229,255,0.3);">📖 API & AI 文档</button></a>
+      <button class="btn-sm" onclick="logout()">安全退出</button>
+    </div>
+  </header>
+
+  <!-- Container -->
+  <div class="container">
+
+    <!-- Stats Top Grid -->
+    <div class="stats-grid">
+      <div class="card">
+        <div class="stat-label">账户净值 (Equity)</div>
+        <div class="stat-value val-green" id="valEquity">--</div>
+        <div class="stat-meta">
+          <span>余额: <strong id="valBalance" style="color:#fff;">--</strong></span>
+          <span style="color:var(--text-muted);">| USD</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="stat-label">经纪商与服务器 (Server)</div>
+        <div class="stat-value val-cyan" id="valServer">--</div>
+        <div class="stat-meta">
+          <span>账号: <strong id="valLogin" style="color:#fff;">--</strong></span>
+          <span>| 杠杆: <strong id="valLeverage" style="color:#fff;">--</strong></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="stat-label">网关实时连接与内存 Hub</div>
+        <div class="stat-value val-gold" id="valActiveClients">0 客户端</div>
+        <div class="stat-meta">
+          <span>SSE: <strong id="sseCount" style="color:#fff;">0</strong></span>
+          <span>| WS: <strong id="wsCount" style="color:#fff;">0</strong></span>
+          <span>| MCP: <strong id="mcpCount" style="color:#fff;">0</strong></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="stat-label">隧道连接 (Cloudflare)</div>
+        <div class="stat-value val-cyan">HTTP/2 ACTIVE</div>
+        <div class="stat-meta">
+          <span>模式: Windows 服务常驻</span>
+          <span>| 端口: 18812</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="main-grid">
+
+      <!-- Left Column: Real-time Streaming -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="dot green"></span>
+            <span>实时行情推送盘 (SSE High-Freq Stream)</span>
+          </div>
+          <div style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono);" id="streamClock">--:--:--</div>
+        </div>
+
+        <table class="ticker-table">
+          <thead>
+            <tr>
+              <th>品种</th>
+              <th>买价 (Bid)</th>
+              <th>卖价 (Ask)</th>
+              <th>点差</th>
+              <th>更新时间</th>
+            </tr>
+          </thead>
+          <tbody id="tickerBody">
+            <tr id="row-XAUUSDm" class="ticker-row">
+              <td><span class="sym-tag">XAUUSDm</span></td>
+              <td class="bid" style="font-weight:700;">--</td>
+              <td class="ask" style="font-weight:700;">--</td>
+              <td class="spread" style="color:var(--text-muted);">--</td>
+              <td class="time" style="color:var(--text-muted); font-size:11px;">--</td>
+            </tr>
+            <tr id="row-EURUSDm" class="ticker-row">
+              <td><span class="sym-tag">EURUSDm</span></td>
+              <td class="bid" style="font-weight:700;">--</td>
+              <td class="ask" style="font-weight:700;">--</td>
+              <td class="spread" style="color:var(--text-muted);">--</td>
+              <td class="time" style="color:var(--text-muted); font-size:11px;">--</td>
+            </tr>
+            <tr id="row-BTCUSDm" class="ticker-row">
+              <td><span class="sym-tag">BTCUSDm</span></td>
+              <td class="bid" style="font-weight:700;">--</td>
+              <td class="ask" style="font-weight:700;">--</td>
+              <td class="spread" style="color:var(--text-muted);">--</td>
+              <td class="time" style="color:var(--text-muted); font-size:11px;">--</td>
+            </tr>
+            <tr id="row-GBPUSDm" class="ticker-row">
+              <td><span class="sym-tag">GBPUSDm</span></td>
+              <td class="bid" style="font-weight:700;">--</td>
+              <td class="ask" style="font-weight:700;">--</td>
+              <td class="spread" style="color:var(--text-muted);">--</td>
+              <td class="time" style="color:var(--text-muted); font-size:11px;">--</td>
+            </tr>
+            <tr id="row-USDJPYm" class="ticker-row">
+              <td><span class="sym-tag">USDJPYm</span></td>
+              <td class="bid" style="font-weight:700;">--</td>
+              <td class="ask" style="font-weight:700;">--</td>
+              <td class="spread" style="color:var(--text-muted);">--</td>
+              <td class="time" style="color:var(--text-muted); font-size:11px;">--</td>
+            </tr>
+            <tr id="row-ETHUSDm" class="ticker-row">
+              <td><span class="sym-tag">ETHUSDm</span></td>
+              <td class="bid" style="font-weight:700;">--</td>
+              <td class="ask" style="font-weight:700;">--</td>
+              <td class="spread" style="color:var(--text-muted);">--</td>
+              <td class="time" style="color:var(--text-muted); font-size:11px;">--</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Right Column: Operations & API Playground -->
+      <div style="display: flex; flex-direction: column; gap: 24px;">
+
+        <!-- Operations -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">⚙️ 虚拟机服务运维管理</div>
+          </div>
+          <div class="control-group">
+            <div class="action-row">
+              <div class="action-info">
+                <h4>重启 MT5 交易终端</h4>
+                <p>安全重载 Session 1 terminal64.exe</p>
+              </div>
+              <button class="btn-sm" onclick="restartMT5()">立即重启</button>
+            </div>
+
+            <div class="action-row">
+              <div class="action-info">
+                <h4>重启网关后台进程</h4>
+                <p>重置 HTTP/WS/SSE 服务及内存池</p>
+              </div>
+              <button class="btn-sm" onclick="restartGateway()">重启网关</button>
+            </div>
+
+            <div class="action-row">
+              <div class="action-info">
+                <h4>重载品种全量缓存</h4>
+                <p>重新拉取交易商全品种字典</p>
+              </div>
+              <button class="btn-sm" onclick="resyncSymbols()">重新同步</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- API Playground -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">⚡ 快速 API 连通性测试</div>
+          </div>
+          <div class="api-grid">
+            <button class="api-tag" onclick="testApi('/status')">GET /status</button>
+            <button class="api-tag" onclick="testApi('/account')">GET /account</button>
+            <button class="api-tag" onclick="testApi('/tick?symbol=XAUUSD')">GET /tick</button>
+            <button class="api-tag" onclick="testApi('/rates?symbol=XAUUSD&timeframe=M1&count=2')">GET /rates (M1)</button>
+            <button class="api-tag" onclick="testApi('/positions')">GET /positions</button>
+            <button class="api-tag" onclick="testApi('/orders')">GET /orders</button>
+          </div>
+          <div style="margin-top: 12px;">
+            <div class="terminal-box" id="apiResponse" style="max-height: 120px;">
+              // 点击上方 API 标签进行在线联调测试
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Dynamic K-Line (OHLCV) Engine Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📊 动态多维 K 线 (OHLCV) 引擎控制台与实时流调试</div>
+        <span class="brand-badge">All Timeframes (M1-MN1) · 10,000+ Bars · Dynamic Forming Live</span>
+      </div>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+        全周期 K 线序列检索与动态跳动追踪引擎：支持任意周期 (M1 至 MN1)、大批量深度检索 (10,000+ 柱)、时间范围筛选、偏移分页，并自动标记当前正在波动的未收盘实时柱 (<code>is_closed: false</code>)。支持通过 SSE (<code>/rates/stream</code>) 实时流式接收新柱与价格变动。
+      </p>
+
+      <!-- Control Toolbar -->
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; background: rgba(0, 229, 255, 0.03); padding: 14px 16px; border-radius: 10px; border: 1px solid rgba(0,229,255,0.12); margin-bottom: 16px;">
+        <div>
+          <label style="display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600;">交易品种</label>
+          <select id="klineSymbolSelect" style="background: #04060a; color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 7px 10px; font-size: 13px;">
+            <option value="XAUUSDm" selected>XAUUSDm (现货黄金)</option>
+            <option value="EURUSDm">EURUSDm (欧元/美元)</option>
+            <option value="BTCUSDm">BTCUSDm (比特币/美元)</option>
+            <option value="GBPUSDm">GBPUSDm (英镑/美元)</option>
+            <option value="USDJPYm">USDJPYm (美元/日元)</option>
+            <option value="ETHUSDm">ETHUSDm (以太坊/美元)</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600;">时间周期</label>
+          <select id="klineTfSelect" style="background: #04060a; color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 7px 10px; font-size: 13px;">
+            <option value="M1" selected>M1 (1分钟)</option>
+            <option value="M5">M5 (5分钟)</option>
+            <option value="M15">M15 (15分钟)</option>
+            <option value="M30">M30 (30分钟)</option>
+            <option value="H1">H1 (1小时)</option>
+            <option value="H4">H4 (4小时)</option>
+            <option value="D1">D1 (日线)</option>
+            <option value="W1">W1 (周线)</option>
+            <option value="MN1">MN1 (月线)</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600;">获取数量</label>
+          <select id="klineCountSelect" style="background: #04060a; color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 7px 10px; font-size: 13px;">
+            <option value="10">10 根</option>
+            <option value="50">50 根</option>
+            <option value="100" selected>100 根</option>
+            <option value="500">500 根</option>
+            <option value="1000">1,000 根</option>
+            <option value="5000">5,000 根 (大批量)</option>
+            <option value="10000">10,000 根 (深度历史)</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600;">起始偏移 (Offset)</label>
+          <input type="number" id="klineOffsetInput" value="0" min="0" step="10" style="width: 80px; background: #04060a; color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 6px 8px; font-size: 13px;">
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 6px; padding-bottom: 6px;">
+          <input type="checkbox" id="klineFormingCheckbox" checked style="accent-color: var(--accent-cyan); cursor: pointer;">
+          <label for="klineFormingCheckbox" style="font-size: 12px; color: #cbd5e1; cursor: pointer;">包含当前未收盘实时柱</label>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-primary" onclick="queryKlines()">⚡ 拉取 K 线数据</button>
+          <button class="btn-sm" id="btnToggleKlineStream" onclick="toggleKlineStream()" style="border: 1px solid var(--accent-green); color: var(--accent-green);">📡 启动实时跳动流</button>
+        </div>
+      </div>
+
+      <!-- Live Forming Candle Spotlight -->
+      <div id="liveFormingCard" style="display: none; background: rgba(0, 229, 255, 0.05); border: 1px solid rgba(0, 229, 255, 0.25); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="status-indicator status-online" style="box-shadow: 0 0 10px #00e5ff;"></span>
+            <span style="font-size: 13px; font-weight: 700; color: var(--accent-cyan);">当前正在波动的未收盘 K 线 (Live Forming Candle)</span>
+            <span id="formingStatusTag" style="font-size: 11px; background: rgba(0,229,255,0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 4px;">is_closed: false</span>
+          </div>
+          <span id="formingTime" style="font-size: 12px; color: var(--text-muted); font-family: monospace;">-</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; font-family: monospace;">
+          <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center;">
+            <div style="font-size: 10px; color: var(--text-muted);">开盘价 (Open)</div>
+            <div id="formingOpen" style="font-size: 14px; font-weight: 700; color: #fff;">-</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center;">
+            <div style="font-size: 10px; color: var(--text-muted);">最高价 (High)</div>
+            <div id="formingHigh" style="font-size: 14px; font-weight: 700; color: var(--accent-green);">-</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center;">
+            <div style="font-size: 10px; color: var(--text-muted);">最低价 (Low)</div>
+            <div id="formingLow" style="font-size: 14px; font-weight: 700; color: var(--accent-red);">-</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center;">
+            <div style="font-size: 10px; color: var(--text-muted);">现价/收盘 (Close)</div>
+            <div id="formingClose" style="font-size: 14px; font-weight: 700; color: #fff;">-</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center;">
+            <div style="font-size: 10px; color: var(--text-muted);">柱内涨跌 (Change)</div>
+            <div id="formingChange" style="font-size: 14px; font-weight: 700;">-</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center;">
+            <div style="font-size: 10px; color: var(--text-muted);">Tick 成交量</div>
+            <div id="formingVol" style="font-size: 14px; font-weight: 700; color: #94a3b8;">-</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center;">
+            <div style="font-size: 10px; color: var(--text-muted);">点差 (Spread)</div>
+            <div id="formingSpread" style="font-size: 14px; font-weight: 700; color: #94a3b8;">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- K-line Results Table & Metadata -->
+      <div id="klineResultMeta" style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px; display: flex; justify-content: space-between;">
+        <span id="klineMetaSummary">暂未拉取数据，请点击上方按钮获取 K 线</span>
+        <span id="klineStreamStatus" style="color: var(--accent-green); display: none;">● 动态流已连接 (实时推流中)</span>
+      </div>
+
+      <div style="max-height: 280px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;">
+        <table class="token-table" style="margin: 0; font-family: monospace; font-size: 12px;">
+          <thead>
+            <tr>
+              <th>时间 (Time)</th>
+              <th>开盘 (Open)</th>
+              <th>最高 (High)</th>
+              <th>最低 (Low)</th>
+              <th>收盘/现价 (Close)</th>
+              <th>涨跌幅 (Change%)</th>
+              <th>成交量 (Vol)</th>
+              <th>点差</th>
+              <th>状态 (is_closed)</th>
+            </tr>
+          </thead>
+          <tbody id="klineTableBody">
+            <tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 24px;">点击「⚡ 拉取 K 线数据」查看结果</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Token Lifecycle Management Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🔑 API 认证令牌生命周期管理 (Token Lifecycle Hub)</div>
+        <button class="btn-primary" onclick="createNewToken()">+ 生成新 Token</button>
+      </div>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+        独立的 Bearer API Token 体系：可随时生成新 Token、重新生成 (Regenerate) 或撤销吊销 (Revoke)，用于分配给外部自动化程序、MCP 服务及脚本，无须泄露主面板密码。
+      </p>
+
+      <table class="token-table">
+        <thead>
+          <tr>
+            <th>标签名称</th>
+            <th>令牌凭证 (Token)</th>
+            <th>创建时间</th>
+            <th>最后调用</th>
+            <th>调用次数</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="tokenTableBody">
+          <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">加载 Token 列表中...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- MCP Protocol Hub & Quick Copy Center -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🔌 MCP 服务协议与接入中心 (Model Context Protocol Hub)</div>
+        <span class="brand-badge">Streamable HTTP / SSE / Stdio</span>
+      </div>
+
+      <!-- Current Selected Token Selector -->
+      <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 16px; background: rgba(0, 229, 255, 0.04); padding: 12px 14px; border-radius: 8px; border: 1px solid rgba(0,229,255,0.15);">
+        <span style="font-size: 13px; font-weight: 600; color: var(--accent-cyan);">选择当前接入使用的 Token:</span>
+        <select id="selectedTokenSelect" onchange="onTokenSelectChange()" style="background:#04060a; color:#fff; border:1px solid var(--border-subtle); padding:6px 12px; border-radius:6px; font-family:var(--font-mono); font-size:12px; outline:none;">
+        </select>
+        <button class="btn-sm" onclick="copyCurrentSelectedToken()">复制当前 Token</button>
+      </div>
+
+      <!-- MCP Tabs Navigation -->
+      <div class="mcp-nav">
+        <button class="mcp-tab-btn active" onclick="switchMcpTab('claude-desktop')">🖥️ Claude Desktop</button>
+        <button class="mcp-tab-btn" onclick="switchMcpTab('streamable-http')">⚡ Streamable HTTP (最新标准)</button>
+        <button class="mcp-tab-btn" onclick="switchMcpTab('sse')">📡 SSE 传输模式</button>
+        <button class="mcp-tab-btn" onclick="switchMcpTab('stdio')">💻 Stdio 本地脚本</button>
+        <button class="mcp-tab-btn" onclick="switchMcpTab('curl')">🌐 cURL 快速调用</button>
+      </div>
+
+      <!-- Tab 1: Claude Desktop -->
+      <div id="tab-claude-desktop" class="mcp-tab-content">
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">添加到 <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>（原生 SSE 模式零本地 Python 依赖，直接网络握手全部 13 项交易与运维工具）：</p>
+        <pre class="mcp-code-block" id="code-claude-desktop"></pre>
+        <button class="btn-primary" onclick="copyCode('code-claude-desktop')">📋 复制 Claude Desktop 配置</button>
+      </div>
+
+      <!-- Tab 2: Streamable HTTP -->
+      <div id="tab-streamable-http" class="mcp-tab-content" style="display: none;">
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">基于最新 Streamable HTTP 协议的 MCP 接入配置（直接 POST 发送 JSON-RPC 2.0 并流式接收）：</p>
+        <pre class="mcp-code-block" id="code-streamable-http"></pre>
+        <button class="btn-primary" onclick="copyCode('code-streamable-http')">📋 复制 Streamable HTTP 配置</button>
+      </div>
+
+      <!-- Tab 3: SSE Transport -->
+      <div id="tab-sse" class="mcp-tab-content" style="display: none;">
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">基于 Server-Sent Events (SSE) 的全双工 MCP 传输配置：</p>
+        <pre class="mcp-code-block" id="code-sse"></pre>
+        <button class="btn-primary" onclick="copyCode('code-sse')">📋 复制 SSE MCP 配置</button>
+      </div>
+
+      <!-- Tab 4: Stdio -->
+      <div id="tab-stdio" class="mcp-tab-content" style="display: none;">
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">便携式 Stdio MCP 启动命令（自动从网关加载或下载便携脚本，零本机私有路径暴露，面向外部任何环境）：</p>
+        <pre class="mcp-code-block" id="code-stdio"></pre>
+        <button class="btn-primary" onclick="copyCode('code-stdio')">📋 复制 Stdio 启动命令</button>
+      </div>
+
+      <!-- Tab 5: cURL -->
+      <div id="tab-curl" class="mcp-tab-content" style="display: none;">
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">通过 cURL 快速测试 MCP 工具列表 (`tools/list`)：</p>
+        <pre class="mcp-code-block" id="code-curl"></pre>
+        <button class="btn-primary" onclick="copyCode('code-curl')">📋 复制 cURL 测试命令</button>
+      </div>
+    </div>
+
+    <!-- Two Columns: Connection Diagnostics & Audit Logs -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+
+      <!-- Active Connections List -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📡 活跃网络连接监视器 (Active Connections)</div>
+          <button class="btn-sm" onclick="fetchConnections()">刷新连接</button>
+        </div>
+        <div class="terminal-box" id="connDetailBox" style="max-height: 220px;">
+          加载连接数据中...
+        </div>
+      </div>
+
+      <!-- Audit Logs -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📜 实时 API 调用审计日志 (Audit Log)</div>
+          <button class="btn-sm" onclick="fetchConnections()">刷新日志</button>
+        </div>
+        <div class="terminal-box" id="auditLogBox" style="max-height: 220px;">
+          加载审计日志中...
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom: Live System Logs -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📜 虚拟机运行输出日志 (mt5_server.log)</div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-sm" onclick="fetchLogs()">刷新日志</button>
+          <button class="btn-sm" onclick="clearLogs()">清屏</button>
+        </div>
+      </div>
+      <div class="terminal-box" id="logTerminal" style="max-height: 180px;">
+        加载系统日志中...
+      </div>
+    </div>
+
+  </div>
+
+  <div id="toast" class="toast">操作已触发</div>
+
+  <script>
+    let activeTokenList = [];
+    let currentSelectedToken = '';
+    let sseSource = null;
+    let previousPrices = {};
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.innerText = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    function switchMcpTab(tabName) {
+      document.querySelectorAll('.mcp-tab-content').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.mcp-tab-btn').forEach(el => el.classList.remove('active'));
+      const activeContent = document.getElementById('tab-' + tabName);
+      if (activeContent) activeContent.style.display = 'block';
+      event.target.classList.add('active');
+    }
+
+    function copyCode(elemId) {
+      const text = document.getElementById(elemId).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('✔ 配置已成功复制到剪贴板！');
+      }).catch(err => {
+        showToast('复制失败: ' + err);
+      });
+    }
+
+    function copyCurrentSelectedToken() {
+      if (!currentSelectedToken) return alert('暂无可用 Token');
+      navigator.clipboard.writeText(currentSelectedToken).then(() => {
+        showToast('✔ Token 已复制: ' + currentSelectedToken.substring(0, 12) + '...');
+      });
+    }
+
+    async function loadTokens() {
+      try {
+        const res = await fetch('/api/tokens');
+        if (res.status === 401) { location.href = '/login'; return; }
+        const data = await res.json();
+        activeTokenList = data.tokens || [];
+        renderTokensTable();
+        populateTokenSelector();
+      } catch (e) {
+        console.error('Failed to load tokens', e);
+      }
+    }
+
+    function renderTokensTable() {
+      const tbody = document.getElementById('tokenTableBody');
+      if (!activeTokenList.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">暂无 Token</td></tr>';
+        return;
+      }
+      tbody.innerHTML = activeTokenList.map(t => {
+        const isAct = t.status === 'active';
+        const masked = t.token.substring(0, 8) + '...' + t.token.substring(t.token.length - 6);
+        return `<tr>
+          <td><strong>${escapeHtml(t.name)}</strong></td>
+          <td>
+            <code style="color:var(--accent-cyan);">${masked}</code>
+            <button class="btn-sm" style="padding:2px 6px; margin-left:6px; font-size:10px;" onclick="copyString('${t.token}')">复制</button>
+          </td>
+          <td style="color:var(--text-muted);">${t.created_at || '--'}</td>
+          <td style="color:var(--text-muted);">${t.last_used_at || '从未使用'}</td>
+          <td style="font-weight:700;">${t.use_count || 0}</td>
+          <td><span class="${isAct ? 'badge-active' : 'badge-revoked'}">${isAct ? '正常生效' : '已撤销'}</span></td>
+          <td>
+            <button class="btn-sm" style="padding:3px 8px; font-size:11px;" onclick="regenerateToken('${t.id}')">重置</button>
+            ${isAct ? `<button class="btn-danger" onclick="revokeToken('${t.id}')">撤销</button>` : ''}
+            <button class="btn-sm" style="padding:3px 8px; font-size:11px; color:var(--text-muted);" onclick="deleteToken('${t.id}')">删除</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function populateTokenSelector() {
+      const select = document.getElementById('selectedTokenSelect');
+      const activeOnes = activeTokenList.filter(t => t.status === 'active');
+      if (!activeOnes.length) {
+        select.innerHTML = '<option value="">无可用活跃 Token</option>';
+        currentSelectedToken = '';
+        renderMcpSnippets('');
+        return;
+      }
+      select.innerHTML = activeOnes.map(t =>
+        `<option value="${t.token}">${escapeHtml(t.name)} (${t.token.substring(0, 10)}...)</option>`
+      ).join('');
+
+      currentSelectedToken = select.value;
+      renderMcpSnippets(currentSelectedToken);
+    }
+
+    function onTokenSelectChange() {
+      currentSelectedToken = document.getElementById('selectedTokenSelect').value;
+      renderMcpSnippets(currentSelectedToken);
+    }
+
+    function renderMcpSnippets(tok) {
+      const tVal = tok || '<YOUR_TOKEN>';
+      const origin = window.location.origin;
+
+      // Option 1: Native SSE (Recommended for Claude Desktop - zero local install)
+      document.getElementById('code-claude-desktop').innerText = JSON.stringify({
+        "mcpServers": {
+          "mt5-gateway": {
+            "url": `${origin}/mcp/sse?token=${tVal}`
+          }
+        }
+      }, null, 2);
+
+      document.getElementById('code-streamable-http').innerText = JSON.stringify({
+        "mcpServers": {
+          "mt5-streamable": {
+            "type": "http",
+            "url": `${origin}/mcp?token=${tVal}`,
+            "headers": {
+              "Authorization": `Bearer ${tVal}`
+            }
+          }
+        }
+      }, null, 2);
+
+      document.getElementById('code-sse').innerText = JSON.stringify({
+        "mcpServers": {
+          "mt5-sse": {
+            "type": "sse",
+            "url": `${origin}/mcp/sse?token=${tVal}`
+          }
+        }
+      }, null, 2);
+
+      document.getElementById('code-stdio').innerText = `# 方式 1: 直接下载便携客户端脚本本地执行 (无机器路径依赖)
+curl -fsSL ${origin}/mcp/client.py -o mt5_client.py
+python3 mt5_client.py --token "${tVal}"
+
+# 方式 2: 零文件单行管道直接运行
+MT5_GATEWAY_URL="${origin}" MT5_GATEWAY_TOKEN="${tVal}" python3 -c "import urllib.request; exec(urllib.request.urlopen('${origin}/mcp/client.py').read().decode('utf-8'))"`;
+
+      document.getElementById('code-curl').innerText = `curl -s -X POST "${origin}/mcp" \\
+  -H "Authorization: Bearer ${tVal}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}'`;
+    }
+
+    let klineEventSource = null;
+
+    async function queryKlines() {
+      const sym = document.getElementById('klineSymbolSelect').value;
+      const tf = document.getElementById('klineTfSelect').value;
+      const count = document.getElementById('klineCountSelect').value;
+      const offset = document.getElementById('klineOffsetInput').value || 0;
+      const incForming = document.getElementById('klineFormingCheckbox').checked;
+
+      document.getElementById('klineMetaSummary').innerText = `正在拉取 ${sym} [${tf}] ${count} 根数据...`;
+      try {
+        const url = `/rates?symbol=${encodeURIComponent(sym)}&timeframe=${encodeURIComponent(tf)}&count=${count}&start=${offset}&include_forming=${incForming}`;
+        const res = await fetch(url);
+        if (res.status === 401) { location.href = '/login'; return; }
+        const data = await res.json();
+        if (data.status === 'ok') {
+          renderKlinesTable(data);
+          showToast(`✔ 成功检索 ${data.count} 根 K 线 (${data.timeframe})`);
+        } else {
+          document.getElementById('klineMetaSummary').innerText = `拉取失败: ${data.error || '未知错误'}`;
+        }
+      } catch (e) {
+        document.getElementById('klineMetaSummary').innerText = `网络异常: ${e}`;
+      }
+    }
+
+    function renderKlinesTable(data) {
+      const rates = data.data || [];
+      const forming = data.forming_bar;
+
+      const timeSpan = (data.time_start && data.time_end) ? `[${data.time_start} 至 ${data.time_end}]` : '';
+      document.getElementById('klineMetaSummary').innerText =
+        `品种: ${data.symbol} | 周期: ${data.timeframe} (${data.timeframe_seconds}s) | 检索数量: ${data.count} 根 ${timeSpan} | 下一页偏移: offset=${data.next_offset || '--'}`;
+
+      const fCard = document.getElementById('liveFormingCard');
+      if (forming) {
+        fCard.style.display = 'block';
+        document.getElementById('formingTime').innerText = forming.time;
+        document.getElementById('formingOpen').innerText = forming.open.toFixed(2);
+        document.getElementById('formingHigh').innerText = forming.high.toFixed(2);
+        document.getElementById('formingLow').innerText = forming.low.toFixed(2);
+        document.getElementById('formingClose').innerText = forming.close.toFixed(2);
+
+        const chgEl = document.getElementById('formingChange');
+        const isUp = forming.change >= 0;
+        chgEl.style.color = isUp ? 'var(--accent-green)' : 'var(--accent-red)';
+        chgEl.innerText = `${isUp ? '+' : ''}${forming.change.toFixed(2)} (${isUp ? '+' : ''}${forming.change_pct}%)`;
+
+        document.getElementById('formingVol').innerText = forming.tick_volume;
+        document.getElementById('formingSpread').innerText = forming.spread;
+      } else {
+        fCard.style.display = 'none';
+      }
+
+      const tbody = document.getElementById('klineTableBody');
+      if (!rates.length) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:16px;">无 K 线记录</td></tr>';
+        return;
+      }
+
+      const reversed = rates.slice().reverse();
+      tbody.innerHTML = reversed.map(r => {
+        const isUp = r.change >= 0;
+        const color = isUp ? 'var(--accent-green)' : 'var(--accent-red)';
+        const statusBadge = r.is_closed
+          ? '<span style="color:#94a3b8; font-size:11px;">已收盘</span>'
+          : '<span style="color:var(--accent-cyan); font-weight:700; font-size:11px; background:rgba(0,229,255,0.12); padding:1px 5px; border-radius:3px;">波动形成中</span>';
+        return `<tr>
+          <td>${r.time}</td>
+          <td>${r.open.toFixed(2)}</td>
+          <td style="color:var(--accent-green);">${r.high.toFixed(2)}</td>
+          <td style="color:var(--accent-red);">${r.low.toFixed(2)}</td>
+          <td style="font-weight:700; color:${color};">${r.close.toFixed(2)}</td>
+          <td style="color:${color};">${isUp ? '+' : ''}${r.change_pct}%</td>
+          <td>${r.tick_volume}</td>
+          <td>${r.spread}</td>
+          <td>${statusBadge}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function toggleKlineStream() {
+      const btn = document.getElementById('btnToggleKlineStream');
+      const statusLabel = document.getElementById('klineStreamStatus');
+
+      if (klineEventSource) {
+        klineEventSource.close();
+        klineEventSource = null;
+        btn.innerText = '📡 启动实时跳动流';
+        btn.style.color = 'var(--accent-green)';
+        btn.style.borderColor = 'var(--accent-green)';
+        statusLabel.style.display = 'none';
+        showToast('已断开 K 线实时流');
+        return;
+      }
+
+      const sym = document.getElementById('klineSymbolSelect').value;
+      const tf = document.getElementById('klineTfSelect').value;
+
+      btn.innerText = '⏹ 停止动态推流';
+      btn.style.color = 'var(--accent-red)';
+      btn.style.borderColor = 'var(--accent-red)';
+      statusLabel.style.display = 'inline';
+      statusLabel.innerText = `● 正在连接 ${sym} [${tf}] 动态流...`;
+
+      const tok = currentSelectedToken || '';
+      const url = `/rates/stream?symbol=${encodeURIComponent(sym)}&timeframe=${encodeURIComponent(tf)}&token=${encodeURIComponent(tok)}`;
+      klineEventSource = new EventSource(url);
+
+      klineEventSource.addEventListener('ready', (e) => {
+        statusLabel.innerText = `● ${sym} [${tf}] 实时流推流中`;
+        showToast(`✔ ${sym} 动态 K 线流已连接！`);
+      });
+
+      klineEventSource.addEventListener('kline_update', (e) => {
+        try {
+          const bar = JSON.parse(e.data);
+          updateLiveFormingCandle(bar);
+        } catch(err) {}
+      });
+
+      klineEventSource.addEventListener('kline_closed', (e) => {
+        try {
+          const bar = JSON.parse(e.data);
+          showToast(`🔔 K 线已收盘: ${bar.time} [收盘价: ${bar.close}]`);
+          queryKlines();
+        } catch(err) {}
+      });
+
+      klineEventSource.addEventListener('kline_open', (e) => {
+        try {
+          const bar = JSON.parse(e.data);
+          updateLiveFormingCandle(bar);
+        } catch(err) {}
+      });
+
+      klineEventSource.onerror = () => {
+        statusLabel.innerText = '● 实时流重连中...';
+      };
+    }
+
+    function updateLiveFormingCandle(bar) {
+      const fCard = document.getElementById('liveFormingCard');
+      fCard.style.display = 'block';
+      document.getElementById('formingTime').innerText = bar.time;
+      document.getElementById('formingOpen').innerText = bar.open.toFixed(2);
+      document.getElementById('formingHigh').innerText = bar.high.toFixed(2);
+      document.getElementById('formingLow').innerText = bar.low.toFixed(2);
+      document.getElementById('formingClose').innerText = bar.close.toFixed(2);
+
+      const chgEl = document.getElementById('formingChange');
+      const isUp = bar.change >= 0;
+      chgEl.style.color = isUp ? 'var(--accent-green)' : 'var(--accent-red)';
+      chgEl.innerText = `${isUp ? '+' : ''}${bar.change.toFixed(2)} (${isUp ? '+' : ''}${bar.change_pct}%)`;
+
+      document.getElementById('formingVol').innerText = bar.tick_volume;
+      document.getElementById('formingSpread').innerText = bar.spread;
+    }
+
+    function copyString(str) {
+      navigator.clipboard.writeText(str).then(() => {
+        showToast('✔ 凭证已复制到剪贴板！');
+      });
+    }
+
+    async function createNewToken() {
+      const name = prompt('请输入新 Token 的备注名称（例如: Claude-Desktop, Mobile-Bot, Webhook）:');
+      if (name === null) return;
+      try {
+        const res = await fetch('/api/tokens/create', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({name: name.trim() || 'API Token'})
+        });
+        const d = await res.json();
+        if (d.status === 'ok') {
+          showToast('✔ 新 Token 生成成功！');
+          await loadTokens();
+        }
+      } catch (e) { alert('创建失败: ' + e); }
+    }
+
+    async function regenerateToken(id) {
+      if (!confirm('确定要重新生成 (Regenerate) 该 Token 吗？旧 Token 将立即失效！')) return;
+      try {
+        const res = await fetch('/api/tokens/regenerate', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({id: id})
+        });
+        const d = await res.json();
+        if (d.status === 'ok') {
+          showToast('✔ Token 已重置！');
+          await loadTokens();
+        }
+      } catch (e) { alert('重置失败: ' + e); }
+    }
+
+    async function revokeToken(id) {
+      if (!confirm('确定要撤销 (Revoke) 该 Token 吗？撤销后外部调用将被拦截拒绝。')) return;
+      try {
+        const res = await fetch('/api/tokens/revoke', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({id: id})
+        });
+        const d = await res.json();
+        if (d.status === 'ok') {
+          showToast('✔ Token 已撤销！');
+          await loadTokens();
+        }
+      } catch (e) { alert('撤销失败: ' + e); }
+    }
+
+    async function deleteToken(id) {
+      if (!confirm('确定要永久删除该 Token 吗？')) return;
+      try {
+        const res = await fetch('/api/tokens/delete', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({id: id})
+        });
+        const d = await res.json();
+        if (d.status === 'ok') {
+          showToast('✔ Token 已删除！');
+          await loadTokens();
+        }
+      } catch (e) { alert('删除失败: ' + e); }
+    }
+
+    async function fetchConnections() {
+      try {
+        const res = await fetch('/api/connections');
+        if (res.status === 401) { location.href = '/login'; return; }
+        const data = await res.json();
+        if (data.status === 'ok') {
+          const stats = data.data;
+          const conns = stats.active_connections;
+          document.getElementById('valActiveClients').innerText = conns.total + ' 客户端';
+          document.getElementById('activeConnText').innerText = '活跃连接: ' + conns.total;
+          document.getElementById('sseCount').innerText = conns.market_sse;
+          document.getElementById('wsCount').innerText = conns.websocket;
+          document.getElementById('mcpCount').innerText = conns.mcp_sse;
+
+          // Details box
+          const box = document.getElementById('connDetailBox');
+          let lines = [];
+          lines.push(`=== 实时长连接统计 (总计: ${conns.total}) ===`);
+          if (stats.clients_detail.sse.length) {
+            lines.push('\n[Market SSE 实时行情客户]:');
+            stats.clients_detail.sse.forEach(c => lines.push(`  • IP: ${c.addr} | 连入时间: ${c.connected_at} | 订阅: ${c.symbols.join(',')}`));
+          }
+          if (stats.clients_detail.ws.length) {
+            lines.push('\n[WebSocket 全双工行情客户]:');
+            stats.clients_detail.ws.forEach(c => lines.push(`  • IP: ${c.addr} | 连入时间: ${c.connected_at} | 鉴权: ${c.authed?'已通过':'未认证'} | 订阅: ${c.symbols.join(',')}`));
+          }
+          if (stats.clients_detail.mcp_sse.length) {
+            lines.push('\n[MCP SSE 协议会话客户]:');
+            stats.clients_detail.mcp_sse.forEach(c => lines.push(`  • IP: ${c.addr} | 建立时间: ${c.connected_at}`));
+          }
+          if (conns.total === 0) lines.push('\n当前暂无持久长连接客户端');
+          box.innerText = lines.join('\n');
+
+          // Audit log box
+          const auditBox = document.getElementById('auditLogBox');
+          const logs = stats.recent_audit_logs || [];
+          if (!logs.length) {
+            auditBox.innerText = '暂无调用审计日志记录';
+          } else {
+            auditBox.innerText = logs.slice().reverse().map(l =>
+              `[${l.time}] ${l.method.padEnd(4)} ${l.status} ${l.duration.padStart(6)} | IP: ${l.ip.padEnd(15)} | Auth: ${l.auth} | Path: ${l.path}`
+            ).join('\n');
+          }
+        }
+      } catch (e) {}
+    }
+
+    function logout() {
+      document.cookie = "mt5_panel_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      location.href = '/login';
+    }
+
+    async function initDashboard() {
+      if (document.getElementById('topHostname')) {
+        document.getElementById('topHostname').innerText = window.location.host;
+      }
+      await loadTokens();
+      await loadAccountAndStatus();
+      await fetchConnections();
+      startSSE();
+      fetchLogs();
+      setInterval(loadAccountAndStatus, 5000);
+      setInterval(fetchConnections, 4000);
+      setInterval(fetchLogs, 5000);
+    }
+
+    async function loadAccountAndStatus() {
+      try {
+        const res = await fetch('/status');
+        if (res.status === 401) { location.href = '/login'; return; }
+        const data = await res.json();
+        if (data.status === 'ok') {
+          document.getElementById('ipcDot').className = 'dot green';
+          document.getElementById('ipcStatus').innerText = 'MT5 在线 (Build ' + (data.terminal_info ? data.terminal_info.build : '6230') + ')';
+          if (data.account) {
+            document.getElementById('valEquity').innerText = '$' + Number(data.account.equity).toLocaleString('en-US', {minimumFractionDigits: 2});
+            document.getElementById('valBalance').innerText = '$' + Number(data.account.balance).toLocaleString('en-US', {minimumFractionDigits: 2});
+            document.getElementById('valServer').innerText = data.account.server || '--';
+            document.getElementById('valLogin').innerText = data.account.login || '--';
+            if (document.getElementById('valLeverage')) {
+              document.getElementById('valLeverage').innerText = data.account.leverage ? '1:' + data.account.leverage : '--';
+            }
+          }
+        } else {
+          document.getElementById('ipcDot').className = 'dot red';
+          document.getElementById('ipcStatus').innerText = 'MT5 离线';
+        }
+      } catch (e) {
+        document.getElementById('ipcDot').className = 'dot red';
+        document.getElementById('ipcStatus').innerText = '连接中断';
+      }
+    }
+
+    function startSSE() {
+      if (sseSource) sseSource.close();
+      sseSource = new EventSource('/stream?symbols=XAUUSDm,EURUSDm,BTCUSDm,GBPUSDm,USDJPYm,ETHUSDm');
+      sseSource.addEventListener('tick', (e) => {
+        try {
+          const tick = JSON.parse(e.data);
+          updateTickRow(tick);
+          document.getElementById('streamClock').innerText = tick.time ? tick.time.split(' ')[1] : '';
+        } catch (err) {}
+      });
+      sseSource.onerror = () => { setTimeout(startSSE, 3000); };
+    }
+
+    function updateTickRow(tick) {
+      const sym = tick.symbol;
+      const row = document.getElementById(`row-${sym}`);
+      if (!row) return;
+
+      const bidCell = row.querySelector('.bid');
+      const askCell = row.querySelector('.ask');
+      const spreadCell = row.querySelector('.spread');
+      const timeCell = row.querySelector('.time');
+
+      const prev = previousPrices[sym] || {};
+      const isUp = tick.bid > (prev.bid || tick.bid);
+      const isDown = tick.bid < (prev.bid || tick.bid);
+
+      bidCell.innerText = tick.bid.toFixed(sym.includes('XAU') || sym.includes('JPY') ? 2 : (sym.includes('BTC') ? 1 : 5));
+      askCell.innerText = tick.ask.toFixed(sym.includes('XAU') || sym.includes('JPY') ? 2 : (sym.includes('BTC') ? 1 : 5));
+      spreadCell.innerText = Math.round((tick.ask - tick.bid) * 100) / 100;
+      timeCell.innerText = tick.time.split(' ')[1];
+
+      row.classList.remove('flash-green', 'flash-red');
+      if (isUp) row.classList.add('flash-green');
+      if (isDown) row.classList.add('flash-red');
+
+      setTimeout(() => { row.classList.remove('flash-green', 'flash-red'); }, 350);
+      previousPrices[sym] = tick;
+    }
+
+    async function testApi(endpoint) {
+      const box = document.getElementById('apiResponse');
+      box.innerText = `执行中: GET ${endpoint}...`;
+      try {
+        const res = await fetch(endpoint);
+        const data = await res.json();
+        box.innerText = JSON.stringify(data, null, 2);
+      } catch (e) { box.innerText = `请求失败: ${e}`; }
+    }
+
+    async function fetchLogs() {
+      try {
+        const res = await fetch('/logs');
+        if (res.status === 401) return;
+        const text = await res.text();
+        const box = document.getElementById('logTerminal');
+        box.innerText = text || '(暂无日志输出)';
+        box.scrollTop = box.scrollHeight;
+      } catch (e) {}
+    }
+
+    function clearLogs() { document.getElementById('logTerminal').innerText = ''; }
+
+    async function restartMT5() {
+      if (!confirm('确定要在 Windows 11 虚拟机中重启 MT5 交易终端吗？')) return;
+      showToast('正在向 Windows 发送 MT5 重启指令...');
+      try {
+        const res = await fetch('/restart_mt5', { method: 'POST' });
+        const d = await res.json();
+        showToast(d.message || 'MT5 重启完成');
+        setTimeout(loadAccountAndStatus, 3000);
+      } catch (e) { showToast('重启请求失败: ' + e); }
+    }
+
+    async function restartGateway() {
+      if (!confirm('确定要重启网关服务吗？')) return;
+      showToast('正在重启网关后台进程...');
+      try { await fetch('/restart_gateway', { method: 'POST' }); } catch (e) {}
+      setTimeout(() => { location.reload(); }, 2500);
+    }
+
+    async function resyncSymbols() {
+      showToast('正在重载品种全量字典...');
+      try {
+        const res = await fetch('/resync_symbols', { method: 'POST' });
+        const d = await res.json();
+        showToast(d.message || '品种重新同步完成');
+      } catch (e) { showToast('同步异常: ' + e); }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    initDashboard();
+  </script>
+</body>
+</html>

@@ -1,0 +1,391 @@
+# MetaTrader 5 Cloud Gateway - AI Agent & LLM Documentation
+> Base URL: http://localhost:18812
+> Protocol Version: HTTP/2, WebSocket RFC 6455, MCP 2024-11-05
+> Authentication: Bearer Token, X-API-Key, or ?token=<TOKEN>
+
+## Overview
+This service is an enterprise-grade cloud trading gateway for MetaTrader 5 (MT5 build 6230) running on a native Windows 11 ARM64 VM. It provides:
+1. High-frequency REST APIs (low latency in-memory cache <0.1ms).
+2. Real-time Streaming (Server-Sent Events & WebSocket).
+3. Native Model Context Protocol (MCP) server supporting Streamable HTTP, SSE, and Stdio.
+4. Token management & automated order execution.
+
+---
+
+## 1. Authentication
+All API endpoints (except documentation `/docs`, `/llms.txt`, and `/openapi.json`) require a Bearer token.
+Header: `Authorization: Bearer <TOKEN>`
+Header alternative: `X-API-Key: <TOKEN>`
+Query alternative: `?token=<TOKEN>`
+
+Tokens are managed in the dashboard (`http://localhost:18812/`) with lifecycle operations (create, regenerate, revoke).
+
+---
+
+## 2. Model Context Protocol (MCP) Tools
+The gateway natively exposes 13 tools via MCP:
+
+### Tool 1: mt5_get_status
+- Description: Get MT5 terminal connectivity, build number, and connection status.
+- Input: `{}`
+- Output example:
+```json
+{
+  "service": "MT5 Gateway MCP Server",
+  "connected": true,
+  "terminal_version": [500, 6230, "25 Sep 2026"],
+  "account_summary": {
+    "login": 10000001,
+    "server": "MetaQuotes-Demo",
+    "balance": 33023.44,
+    "equity": 33023.44
+  }
+}
+```
+
+### Tool 2: mt5_get_account
+- Description: Get complete account balance, equity, leverage, free margin, and broker information.
+- Input: `{}`
+- Output example:
+```json
+{
+  "login": 10000001,
+  "balance": 33023.44,
+  "equity": 33023.44,
+  "margin": 0.0,
+  "margin_free": 33023.44,
+  "leverage": 1000,
+  "server": "MetaQuotes-Demo",
+  "currency": "USD"
+}
+```
+
+### Tool 3: mt5_get_tick
+- Description: Query the latest real-time market tick price with automatic case and suffix resolution (e.g. `xauusd` -> `XAUUSDm`).
+- Parameters:
+  - `symbol` (string, required): e.g. "XAUUSD", "EURUSD", "BTCUSD"
+- Output example:
+```json
+{
+  "symbol": "XAUUSDm",
+  "time": "2026-10-09 00:05:12",
+  "timestamp": 1791475512,
+  "bid": 4122.50,
+  "ask": 4122.74,
+  "volume": 0.0
+}
+```
+
+### Tool 4: mt5_get_rates
+- Description: Fetch historical and live dynamic K-line OHLCV candle bars. Supports all timeframes (M1-MN1), large-volume batch queries (10,000+ bars), time-range slicing, offset pagination, and real-time forming candle detection (`is_closed: false`).
+- Parameters:
+  - `symbol` (string, required): e.g. "XAUUSD", "EURUSDm", "BTCUSDm"
+  - `timeframe` (string, optional, default "M1"): "M1", "M2", "M3", "M4", "M5", "M6", "M10", "M12", "M15", "M20", "M30", "H1", "H2", "H3", "H4", "H6", "H8", "H12", "D1", "W1", "MN1" (also supports "1m", "5m", "1h", "1d" aliases)
+  - `count` (integer, optional, default 500): Number of bars to return (supports 1 to 50,000+)
+  - `start` (integer, optional, default 0): Offset index (0 = latest candle, positive = historical pagination offset)
+  - `start_time` (string, optional): Filter start time in ISO 8601 (e.g. "2026-10-01T00:00:00") or UNIX timestamp
+  - `end_time` (string, optional): Filter end time in ISO 8601 or UNIX timestamp
+  - `include_forming` (boolean, optional, default true): Include currently ticking unclosed candle (`is_closed: false`)
+- Output example:
+```json
+{
+  "status": "ok",
+  "symbol": "XAUUSDm",
+  "timeframe": "M1",
+  "timeframe_seconds": 60,
+  "query_mode": "position",
+  "count": 2,
+  "offset": 0,
+  "has_more": true,
+  "next_offset": 2,
+  "time_start": "2026-10-09 19:46:00",
+  "time_end": "2026-10-09 19:47:00",
+  "forming_bar": {
+    "time": "2026-10-09 19:47:00",
+    "timestamp": 1791546420,
+    "open": 4181.325,
+    "high": 4183.747,
+    "low": 4180.484,
+    "close": 4183.211,
+    "tick_volume": 173,
+    "spread": 240,
+    "real_volume": 0,
+    "is_closed": false,
+    "change": 1.886,
+    "change_pct": 0.0451,
+    "amplitude": 3.263
+  },
+  "rates": [
+    {
+      "time": "2026-10-09 19:46:00",
+      "timestamp": 1791546360,
+      "open": 4182.112,
+      "high": 4182.485,
+      "low": 4180.809,
+      "close": 4181.113,
+      "tick_volume": 126,
+      "spread": 240,
+      "real_volume": 0,
+      "is_closed": true,
+      "change": -0.999,
+      "change_pct": -0.0239,
+      "amplitude": 1.676
+    },
+    {
+      "time": "2026-10-09 19:47:00",
+      "timestamp": 1791546420,
+      "open": 4181.325,
+      "high": 4183.747,
+      "low": 4180.484,
+      "close": 4183.211,
+      "tick_volume": 173,
+      "spread": 240,
+      "real_volume": 0,
+      "is_closed": false,
+      "change": 1.886,
+      "change_pct": 0.0451,
+      "amplitude": 3.263
+    }
+  ]
+}
+```
+
+### Tool 5: mt5_list_symbols
+- Description: Retrieve full list of tradeable instruments, optionally filtered by keyword or group.
+- Parameters:
+  - `group` (string, optional): e.g. "Forex", "Crypto", "Metals"
+
+### Tool 6: mt5_get_symbol_info
+- Description: Get contract specifications, lot sizes, tick value, spread, and margin requirements.
+- Parameters:
+  - `symbol` (string, required): e.g. "EURUSDm"
+
+### Tool 7: mt5_get_positions
+- Description: Get currently open positions.
+- Input: `{}`
+- Output example:
+```json
+[
+  {
+    "ticket": 12849102,
+    "time": 1791472000,
+    "type": 0,
+    "symbol": "XAUUSDm",
+    "volume": 0.05,
+    "price_open": 4120.50,
+    "price_current": 4122.50,
+    "sl": 4110.0,
+    "tp": 4140.0,
+    "profit": 10.0
+  }
+]
+```
+
+### Tool 8: mt5_get_orders
+- Description: Get pending limit / stop orders.
+- Input: `{}`
+
+### Tool 9: mt5_order_send
+- Description: Submit a market or pending order.
+- Parameters:
+  - `symbol` (string, required): Symbol code (e.g. "XAUUSDm")
+  - `action` (string, required): "buy" or "sell"
+  - `volume` (number, required): Lot size (e.g. 0.01)
+  - `price` (number, optional): Order price (defaults to current market ask/bid)
+  - `sl` (number, optional): Stop loss price
+  - `tp` (number, optional): Take profit price
+  - `comment` (string, optional): Order tag
+
+### Tool 10: mt5_position_close
+- Description: Close an open position by ticket ID.
+- Parameters:
+  - `ticket` (integer, required): Position ticket ID
+
+### Tool 11: mt5_restart_terminal
+- Description: Safe restart of MT5 terminal GUI process in Windows Session 1.
+- Input: `{}`
+
+### Tool 12: mt5_restart_gateway
+- Description: Trigger background task to restart the HTTP/WS gateway.
+- Input: `{}`
+
+### Tool 13: mt5_get_logs
+- Description: Read trailing runtime logs from `mt5_server.log`.
+- Parameters:
+  - `lines` (integer, optional, default 50): Number of trailing log lines.
+
+---
+
+## 3. REST API Reference
+
+### GET /status
+- Query params: `token`
+- Response:
+```json
+{
+  "status": "ok",
+  "service": "MT5 HTTP & Stream Gateway",
+  "mt5_connected": true,
+  "terminal_version": [500, 6230, "25 Sep 2026"],
+  "account": {"login": 10000001, "server": "MetaQuotes-Demo", "balance": 33023.44, "equity": 33023.44}
+}
+```
+
+### GET /account
+- Header: `Authorization: Bearer <TOKEN>`
+- Response:
+```json
+{
+  "status": "ok",
+  "data": {
+    "login": 10000001,
+    "balance": 33023.44,
+    "equity": 33023.44,
+    "margin_free": 33023.44,
+    "currency": "USD"
+  }
+}
+```
+
+### GET /tick?symbol={symbol}
+- Response:
+```json
+{
+  "status": "ok",
+  "symbol": "XAUUSDm",
+  "data": {
+    "symbol": "XAUUSDm",
+    "time": "2026-10-09 00:05:12",
+    "bid": 4122.50,
+    "ask": 4122.74
+  }
+}
+```
+
+### GET /rates?symbol={symbol}&timeframe={TF}&count={N}&start={offset}&start_time={iso}&end_time={iso}&include_forming={bool}
+- Parameters:
+  - `symbol` (string, required): e.g. "XAUUSD"
+  - `timeframe` (string, optional, default "M1"): M1, M2, M3, M4, M5, M6, M10, M12, M15, M20, M30, H1, H2, H3, H4, H6, H8, H12, D1, W1, MN1 (or 1m, 5m, 1h, 1d)
+  - `count` or `limit` (integer, optional, default 500): 1 to 50,000+
+  - `start` or `offset` (integer, optional, default 0): 0 for latest bars, positive for historical offset
+  - `start_time` or `from` (string, optional): ISO 8601 or timestamp
+  - `end_time` or `to` (string, optional): ISO 8601 or timestamp
+  - `include_forming` (boolean, optional, default true): Include current live ticking candle
+- Response:
+```json
+{
+  "status": "ok",
+  "symbol": "XAUUSDm",
+  "timeframe": "M1",
+  "timeframe_seconds": 60,
+  "query_mode": "position",
+  "count": 2,
+  "offset": 0,
+  "has_more": true,
+  "next_offset": 2,
+  "time_start": "2026-10-09 19:46:00",
+  "time_end": "2026-10-09 19:47:00",
+  "forming_bar": {
+    "time": "2026-10-09 19:47:00",
+    "timestamp": 1791546420,
+    "open": 4181.325,
+    "high": 4183.747,
+    "low": 4180.484,
+    "close": 4183.211,
+    "tick_volume": 173,
+    "spread": 240,
+    "real_volume": 0,
+    "is_closed": false,
+    "change": 1.886,
+    "change_pct": 0.0451,
+    "amplitude": 3.263
+  },
+  "data": [
+    {"time": "2026-10-09 19:46:00", "timestamp": 1791546360, "open": 4182.112, "high": 4182.485, "low": 4180.809, "close": 4181.113, "tick_volume": 126, "spread": 240, "is_closed": true, "change": -0.999, "change_pct": -0.0239, "amplitude": 1.676},
+    {"time": "2026-10-09 19:47:00", "timestamp": 1791546420, "open": 4181.325, "high": 4183.747, "low": 4180.484, "close": 4183.211, "tick_volume": 173, "spread": 240, "is_closed": false, "change": 1.886, "change_pct": 0.0451, "amplitude": 3.263}
+  ]
+}
+```
+
+### GET /rates/stream?symbol={symbol}&timeframe={TF} (K-Line SSE Stream)
+- Query params: `symbol` (required), `timeframe` (optional, default "M1"), `token` (optional Bearer query param)
+- Stream Events:
+  - `event: ready`: Emitted on connection with initial historical bars.
+  - `event: kline_update`: Emitted on live tick updating high/low/close/volume of the current unclosed candle.
+  - `event: kline_closed`: Emitted when the candle period ends, confirming the closed candle.
+  - `event: kline_open`: Emitted when a new candle period begins.
+
+### GET /mcp/client.py (Portable Stdio MCP Client Download)
+- Public endpoint (no token required).
+- Returns pure standard-library Python Stdio-to-HTTP bridge with zero machine path leakage.
+- Quick run:
+```bash
+curl -fsSL http://localhost:18812/mcp/client.py -o mt5_client.py
+python3 mt5_client.py --token "<YOUR_TOKEN>"
+```
+
+### POST /order
+- Request Body:
+```json
+{
+  "symbol": "XAUUSDm",
+  "action": "buy",
+  "volume": 0.01,
+  "sl": 4110.0,
+  "tp": 4140.0,
+  "comment": "AI Bot Order"
+}
+```
+- Response:
+```json
+{
+  "status": "ok",
+  "order": 12849120,
+  "deal": 12849120,
+  "price": 4122.74,
+  "volume": 0.01
+}
+```
+
+### POST /close
+- Request Body:
+```json
+{
+  "ticket": 12849120
+}
+```
+
+---
+
+## 4. Real-Time Streaming
+
+### Server-Sent Events (SSE)
+- Endpoint: `GET /stream?symbols=XAUUSD,EURUSD,BTCUSD&token=<TOKEN>`
+- Header: `Accept: text/event-stream`
+- Event structure:
+```
+event: tick
+data: {"symbol": "XAUUSDm", "time": "2026-10-09 00:05:12", "bid": 4122.50, "ask": 4122.74}
+```
+
+### WebSocket
+- Endpoint: `ws://10.211.55.3:18813?token=<TOKEN>`
+- Subscribe command: `{"action": "subscribe", "symbols": ["BTCUSD", "XAUUSD"]}`
+- Unsubscribe command: `{"action": "unsubscribe", "symbols": ["BTCUSD"]}`
+- Event structure:
+```json
+{"event": "tick", "data": {"symbol": "BTCUSDm", "bid": 81270.07, "ask": 81276.47}}
+```
+
+---
+
+## 5. Model Context Protocol (MCP) Endpoints
+
+### Streamable HTTP
+- Endpoint: `POST /mcp?token=<TOKEN>`
+- Header: `Authorization: Bearer <TOKEN>`
+- Standard JSON-RPC 2.0 interface. Supports `tools/list`, `tools/call`, `resources/list`, `prompts/list`, batch calls.
+
+### SSE Transport
+- Connect: `GET /mcp/sse?token=<TOKEN>` -> Receives `event: endpoint` with target URL.
+- Send messages: `POST /mcp/messages?session_id=<SESSION_ID>&token=<TOKEN>`
